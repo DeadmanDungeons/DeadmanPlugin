@@ -9,6 +9,9 @@ import java.util.regex.Pattern;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.PluginDescriptionFile;
+import org.deadmandungeons.deadmanplugin.command.Command;
+import org.deadmandungeons.deadmanplugin.command.CommandInfo;
+import org.deadmandungeons.deadmanplugin.command.SubCommandInfo;
 
 /**
  * A Messaging utility class that makes messaging Players with configured messages easy.
@@ -97,24 +100,22 @@ public class Messenger {
 	}
 
 	/**
-	 * 
+	 * TODO make more clean in Minecraft console, and use main description
 	 * @param cmd - The Command to send as its usage, and description
 	 * @param sender - The Command Sender to send the command info to
 	 */
 	public void sendCommandInfo(Command cmd, CommandSender sender) {
         CommandInfo info = cmd.getClass().getAnnotation(CommandInfo.class);
         if (sender.hasPermission(info.permission())) {
-    		String[] commands = info.arguments().split("\\|");
+    		SubCommandInfo[] commands = info.subCommands();
     		String[] descriptions = info.description().split("\\|");
-    		for (int i=0; i<commands.length; i++) {
-    			sender.sendMessage(getPrimaryColor() + "/" + getMainCmd() + " " + info.name() + " " + commands[i].replace("%", ""));
-    			if (descriptions.length == commands.length) {
-    				sender.sendMessage(getSecondaryColor() + "  -" + descriptions[i]);
-    			} else {
-    				if (i == 0) {
-    					sender.sendMessage(getSecondaryColor() + "  -" + info.description());
-    				}
+    		for (SubCommandInfo cmdInfo : commands) {
+    			String arguments = "";
+    			for (int i=0; i<cmdInfo.arguments().length; i++) {
+    				arguments += (i > 0 ? " " : "") + cmdInfo.arguments()[i].argName();
     			}
+    			sender.sendMessage(getPrimaryColor() + "/" + getMainCmd() + " " + info.name() + " " + arguments);
+    			sender.sendMessage(getSecondaryColor() + "  -" + cmdInfo.description());
     		}
         }
     }
@@ -137,10 +138,10 @@ public class Messenger {
 	 * 
 	 * @param sender - The CommandSender to send this plugin's information to
 	 */
-	public void sendPluginInfo(DeadmanPlugin plugin, CommandSender sender) {
+	public void sendPluginInfo(CommandSender sender) {
 		PluginDescriptionFile pdf = plugin.getDescription();
 		sender.sendMessage(getPrimaryColor() + pdf.getName() + " Version: " + getSecondaryColor() + pdf.getVersion());
-		sender.sendMessage(getPrimaryColor() + "Created By: " + getSecondaryColor() + CoreUtils.formatList(pdf.getAuthors()));
+		sender.sendMessage(getPrimaryColor() + "Created By: " + getSecondaryColor() + DeadmanUtils.formatList(pdf.getAuthors()));
 		sender.sendMessage(getPrimaryColor() + "Contact at: " + getSecondaryColor() + pdf.getWebsite());
 		if (getMainCmd() != null) {
 			sender.sendMessage(getPrimaryColor() + "Type '/" + getMainCmd() + " help' for a list of commands you can use");

@@ -1,4 +1,4 @@
-package org.deadmandungeons.deadmanplugin;
+package org.deadmandungeons.deadmanplugin.command;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -16,11 +16,6 @@ public @interface CommandInfo {
     public String pattern();
     
     /**
-     * The arguments for the command, i.e. how the command should be used.
-     */
-    public String arguments();
-    
-    /**
      * A description of what the command does.
      */
     public String description();
@@ -31,8 +26,13 @@ public @interface CommandInfo {
     public String permission();
     
     /**
-     * The whether or not the command can only be executed in-game.
+     * A flag stating whether or not the command can only be executed in-game.
      */
     public boolean inGameOnly();
+    
+    /**
+     * All of the possible inner sub-commands that can be executed
+     */
+    public SubCommandInfo[] subCommands();
     
 }
