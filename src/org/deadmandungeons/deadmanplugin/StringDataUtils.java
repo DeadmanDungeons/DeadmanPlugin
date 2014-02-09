@@ -9,13 +9,30 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 
-
+/**
+ * <b>A utility class to get variables from a formatted string used for YAML data storage.</b> <br />
+ * Variables that are stored as config data <b>entries</b> are in the following format:<br />
+ * <code>&lt;key&gt;: &lt;value&gt;, &lt;key&gt;: &lt;value&gt;, &lt;key&gt;: &lt;value&gt;</code><br />
+ * Example: <code>World: empire, X: 140, Y: 98, Z: 354, ID: 135, Data: 2</code><br /><br />
+ * Variables that are stored as config data <b>keys</b> are in the following format:<br />
+ * <code>X&lt;x-coord&gt;Y&lt;y-coord&gt;Z&lt;z-coord&gt;W&lt;world&gt;</code><br />
+ * Example: X351Y154Z1478Wempire
+ * Use the {@link Keys} enum to map each value.
+ * @author Jon
+ */
 public class StringDataUtils {
 	
 	private StringDataUtils(){}
 	
-	
-	public static Location toLocation(String entry) {
+	/**
+	 * This is used to convert the given String entry into a Location object.<br />
+	 * The given String must contain a minimum of the following Keys:<br />
+	 * {@link Keys.WORLD}, {@link Keys.XCOORD}, {@link Keys.YCOORD}, {@link Keys.ZCOORD}
+	 * @param entry - The String entry containing all of the necessary Location Keys and value pairs
+	 * @return The Location that the given String described. null will be returned if the entry String
+	 * was not formatted properly, or there was a missing key and value pair 
+	 */
+	public static Location getLocationFromEntry(String entry) {
 		if (entry == null || entry.isEmpty()) {
 			return null;
 		}
@@ -36,9 +53,12 @@ public class StringDataUtils {
 	
 	
 	/**
-	 * This is used to convert the config keys in the format of a location
-	 * @param config key
-	 * @return a Location from a String in the format of 'X#Y#Z#Wworld'
+	 * This is used to convert the given String config key into a Location object<br />
+	 * The given String key must be in the format of:<br />
+	 * <code>X&lt;x-coord&gt;Y&lt;y-coord&gt;Z&lt;z-coord&gt;W&lt;world&gt;</code><br />
+	 * Example: X351Y154Z1478Wempire
+	 * @param key - The String key int the format of a location to be converted into a Location
+	 * @return The Location the given String key represents or null if the key is improperly formatted
 	 */
 	public static Location getLocationFromKey(String key) {
 		if (key == null || key.isEmpty()) {
@@ -63,7 +83,11 @@ public class StringDataUtils {
 		return null;
 	}
 
-	
+	/**
+	 * @param loc - The Location object that the returned String should represent
+	 * @param withDirection - a flag to specify if Yaw and Pitch should be included in the returned String
+	 * @return A String representation of the given Location in the format used for config data entries
+	 */
 	public static String formatLocation(Location loc, boolean withDirection) {
 		String formatted = "";
 		if (!withDirection) {
@@ -77,7 +101,20 @@ public class StringDataUtils {
 		
 		return formatted;
 	}
+	
+	/**
+	 * @param loc - The Location that the returned String should represent
+	 * @return A String representation of the given Location in the format used for config data keys
+	 */
+	public static String formatLocationKey(Location loc) {
+		return "X" + loc.getBlockX() + "Y" + loc.getBlockY() + "Z" + loc.getBlockZ() + "W" + loc.getWorld().getName();
+	}
 
+	/**
+	 * A convenience method to format a List of Locations in the format used in config data entries
+	 * @param locationList - The List of Locations that should be represented in the returned list of Strings
+	 * @return A List Strings containing all of the given Locations in the format used for config data entries
+	 */
 	public static List<String> formatLocationList(List<Location> locationList) {
 		List<String> stringList = new ArrayList<String>();
 		for (Location loc : locationList) {
@@ -86,6 +123,11 @@ public class StringDataUtils {
 		return stringList;
 	}
 	
+	/**
+	 * A convenience method to format a List of Locations in the format used in config data keys
+	 * @param locationList - The List of Locations that should be represented in the returned list of Strings
+	 * @return A List Strings containing all of the given Locations in the format used for config data keys
+	 */
 	public static List<String> formatLocationKeyList(List<Location> locationList) {
 		List<String> stringList = new ArrayList<String>();
 		for (Location loc : locationList) {
@@ -94,11 +136,39 @@ public class StringDataUtils {
 		return stringList;
 	}
 	
-	public static String formatLocationKey(Location loc) {
-		return "X" + loc.getBlockX() + "Y" + loc.getBlockY() + "Z" + loc.getBlockZ() + "W" + loc.getWorld().getName();
+	public static String formatLocationData(LocationMetadata locData, boolean withDirection) {
+		String formatted = formatLocation(locData, withDirection);
+		for (Keys key : locData.getMetaData().keySet()) {
+			formatted += ", " + key + locData.getMetaData().get(key).asString();
+		}
+		return formatted;
 	}
-
 	
+	public static List<String> formatLocationDataList(List<LocationMetadata> locationList) {
+		List<String> stringList = new ArrayList<String>();
+		for (LocationMetadata loc : locationList) {
+			stringList.add(formatLocationData(loc, false));
+		}
+		return stringList;
+	}
+	
+	public static List<Location> getLocationEntryList(List<String> stringList) {
+		List<Location> locationList = new ArrayList<Location>();
+		for (String stringLoc : stringList) {
+			Location loc = getLocationFromEntry(stringLoc);
+			if (loc != null) {
+				locationList.add(loc);
+			}
+		}
+		return locationList;
+	}
+	
+
+	/**
+	 * @param entry - The String entry containing the desired Long variable
+	 * @param key - The Key of the desired Long variable
+	 * @return A Long object of the desired long value, or null if a Long value did not exist at the given Key
+	 */
 	public static Long getLong(String entry, Keys key) {
 		String regex = key + "-?\\d+";
 		Pattern patern = Pattern.compile(regex); 
@@ -109,6 +179,11 @@ public class StringDataUtils {
 		return null;
 	}
 	
+	/**
+	 * @param entry - The String entry containing the desired Integer variable
+	 * @param key - The Key of the desired Integer variable
+	 * @return An Integer object of the desired int value, or null if a Integer value did not exist at the given Key
+	 */
 	public static Integer getInt(String entry, Keys key) {
 		Long longResult = getLong(entry, key);
 		if (longResult != null && longResult > Integer.MIN_VALUE && longResult < Integer.MAX_VALUE) {
@@ -117,6 +192,11 @@ public class StringDataUtils {
 		return null;
 	}
 	
+	/**
+	 * @param entry - The String entry containing the desired Double variable
+	 * @param key - The Key of the desired Double variable
+	 * @return A Double object of the desired double value, or null if a Double value did not exist at the given Key
+	 */
 	public static Double getDouble(String entry, Keys key) {
 		String regex = key + "-?\\d+(\\.\\d+)?";
 		Pattern patern = Pattern.compile(regex); 
@@ -127,6 +207,11 @@ public class StringDataUtils {
 		return null;
 	}
 	
+	/**
+	 * @param entry - The String entry containing the desired WorldName variable
+	 * @param key - The Key of the desired WorldName variable
+	 * @return The World defined at the given key, or null if a WorldName value did not exist at the given Key
+	 */
 	public static World getWorld(String entry, Keys key) {
 		String regex = key + ".+?(?=,)";
 		Pattern patern = Pattern.compile(regex); 
@@ -137,6 +222,11 @@ public class StringDataUtils {
 		return null;
 	}
 	
+	/**
+	 * @param entry - The String entry containing the desired variable
+	 * @param key - The Key of the desired variable
+	 * @return The raw String defined at the given key, or null if a value did not exist at the given Key
+	 */
 	public static String getString(String entry, Keys key) {
 		String regex = key + "([^,])+";
 		Pattern patern = Pattern.compile(regex); 

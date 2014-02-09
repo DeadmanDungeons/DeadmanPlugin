@@ -12,8 +12,7 @@ public interface Command {
 	 * @param sender - the CommandSender executing the command
 	 * @param args - An array of objects to be passed as arguments for the command
 	 * @return true if the command was executed successfully, and false otherwise.
-	 * @throws IllegalArgumentException if the incorrect array of Object arguments is given.
 	 */
-	public boolean execute(CommandSender sender, Object... args) throws IllegalArgumentException;
+	public boolean execute(CommandSender sender, Object... args);
 	  
 }

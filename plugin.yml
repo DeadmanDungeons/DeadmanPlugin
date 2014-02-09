@@ -1,5 +1,7 @@
-name: DeadmanCore
-main: org.deadmandungeons.deadmancore.DeadmanCore
-version: 0.01
+name: DeadmanPlugin
+main: org.deadmandungeons.deadmanplugin.DeadmanCore
+version: 1.0
 author: Weasel_Squeezer
 website: http://www.deadmandungeons.org
+
+softdepend: [Vault]

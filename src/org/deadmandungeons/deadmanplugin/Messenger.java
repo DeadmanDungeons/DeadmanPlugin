@@ -32,6 +32,7 @@ public class Messenger {
 	private String mainCmd;
 	private ChatColor primaryColor;
 	private ChatColor secondaryColor;
+	private ChatColor tertiaryColor;
 	
 	private DeadmanPlugin plugin;
 	
@@ -47,18 +48,13 @@ public class Messenger {
 	 */
 	public String getMessage(String path, boolean colorCode) {
 		String message = null;
-		if (cachedMessages.containsKey(path)) {
-			message = cachedMessages.get(path);
-		} else {
-			message = injectColors(plugin.getLangFile().getConfig().getString(path));
-			cachedMessages.put(path, message);
-		}
-		if (message != null) {
-			if (!colorCode) {
-				message = message.replaceAll(FORMATTING_REGEX, "");
+		String rawMessage = getRawMessage(path);
+		if (rawMessage != null) {
+			if (colorCode) {
+				message = injectColors(rawMessage);
+			} else {
+				message = rawMessage.replaceAll(FORMATTING_REGEX, "");
 			}
-		} else {
-			plugin.getLogger().log(Level.SEVERE, "Failed to retreive message '" + path + "' from lang file!");
 		}
 		return message;
 	}
@@ -85,7 +81,6 @@ public class Messenger {
 	}
 	
 	/**
-	 * 
 	 * @param sender - The CommandSender to send the message to
 	 * @param path - The path of the configured message in the plugin's language file
 	 * @param vars - The variables to be injected in the message, given in the order that they occur
@@ -100,22 +95,31 @@ public class Messenger {
 	}
 
 	/**
-	 * TODO make more clean in Minecraft console, and use main description
 	 * @param cmd - The Command to send as its usage, and description
 	 * @param sender - The Command Sender to send the command info to
 	 */
 	public void sendCommandInfo(Command cmd, CommandSender sender) {
         CommandInfo info = cmd.getClass().getAnnotation(CommandInfo.class);
         if (sender.hasPermission(info.permission())) {
-    		SubCommandInfo[] commands = info.subCommands();
-    		String[] descriptions = info.description().split("\\|");
-    		for (SubCommandInfo cmdInfo : commands) {
-    			String arguments = "";
-    			for (int i=0; i<cmdInfo.arguments().length; i++) {
-    				arguments += (i > 0 ? " " : "") + cmdInfo.arguments()[i].argName();
-    			}
-    			sender.sendMessage(getPrimaryColor() + "/" + getMainCmd() + " " + info.name() + " " + arguments);
-    			sender.sendMessage(getSecondaryColor() + "  -" + cmdInfo.description());
+        	sender.sendMessage(ChatColor.BOLD + "" + getPrimaryColor() + info.name() + " Command");
+        	SubCommandInfo[] commands = info.subCommands();
+        	if (commands.length == 0) {
+        		sender.sendMessage(getSecondaryColor() + "  /" + getMainCmd() + " " + info.name());
+        	}
+        	if (info.description() != null && !info.description().trim().isEmpty()) {
+				sender.sendMessage(getTertiaryColor() + "    - " + info.description());
+			}
+    		if (commands.length > 0) {
+        		for (SubCommandInfo cmdInfo : commands) {
+        			String arguments = "";
+        			for (int i=0; i<cmdInfo.arguments().length; i++) {
+        				arguments += (i > 0 ? " " : "") + cmdInfo.arguments()[i].argName();
+        			}
+        			sender.sendMessage(getSecondaryColor() + "  /" + getMainCmd() + " " + info.name() + " " + arguments);
+        			if (cmdInfo.description() != null && !cmdInfo.description().trim().isEmpty()) {
+        				sender.sendMessage(getTertiaryColor() + "    - " + cmdInfo.description());
+        			}
+        		}
     		}
         }
     }
@@ -126,12 +130,13 @@ public class Messenger {
 	 * @param commandMap - A Map containing all of the registered commands to be sent to the CommandSender
 	 */
 	public void sendHelpInfo(CommandSender sender, Map<String, Command> commandMap) {
-		sender.sendMessage(getPrimaryColor() + "<============== " + getSecondaryColor() + "QuestControl Commands" + getPrimaryColor() + " ==============>");
+		String helpTitle = getPrimaryColor() + plugin.getName() + " Commands" + getTertiaryColor();
+		sender.sendMessage(getTertiaryColor() + "<============== " + helpTitle + " ==============>");
 		for (Command cmd : commandMap.values()) {
 			sendCommandInfo(cmd, sender);
 			sender.sendMessage("");
         }
-		sender.sendMessage(getPrimaryColor() + "<==================================================>");
+		sender.sendMessage(getTertiaryColor() + "<==================================================>");
 	}
 	
 	/**
@@ -140,14 +145,80 @@ public class Messenger {
 	 */
 	public void sendPluginInfo(CommandSender sender) {
 		PluginDescriptionFile pdf = plugin.getDescription();
-		sender.sendMessage(getPrimaryColor() + pdf.getName() + " Version: " + getSecondaryColor() + pdf.getVersion());
-		sender.sendMessage(getPrimaryColor() + "Created By: " + getSecondaryColor() + DeadmanUtils.formatList(pdf.getAuthors()));
-		sender.sendMessage(getPrimaryColor() + "Contact at: " + getSecondaryColor() + pdf.getWebsite());
+		sender.sendMessage(getSecondaryColor() + pdf.getName() + " Version: " + getPrimaryColor() + pdf.getVersion());
+		String authors = DeadmanUtils.formatList(pdf.getAuthors(), getPrimaryColor(), getSecondaryColor());
+		sender.sendMessage(getSecondaryColor() + "Created By: " + getPrimaryColor() + authors);
+		sender.sendMessage(getSecondaryColor() + "Contact at: " + getPrimaryColor() + pdf.getWebsite());
 		if (getMainCmd() != null) {
-			sender.sendMessage(getPrimaryColor() + "Type '/" + getMainCmd() + " help' for a list of commands you can use");
+			sender.sendMessage(getSecondaryColor() + "Type '/" + getMainCmd() + " help' for a list of commands you can use");
 		}
 	}
 	
+	/**
+	 * @return The primary ChatColor configured in the plugins lang file, or ChatColor.GOLD by default if
+	 * no color is configured
+	 */
+	public ChatColor getPrimaryColor() {
+		if (primaryColor == null) {
+			String colorCode = getRawMessage("primary-color");
+			if (colorCode != null) {
+				primaryColor = ChatColor.getByChar(colorCode.replace("&", ""));;
+			}
+		}
+		return primaryColor == null ? ChatColor.GOLD : primaryColor;
+	}
+	
+	/**
+	 * @return The secondary ChatColor configured in the plugins lang file, or ChatColor.GRAY by default if
+	 * no color is configured
+	 */
+	public ChatColor getSecondaryColor() {
+		if (secondaryColor == null) {
+			String colorCode = getRawMessage("secondary-color");
+			if (colorCode != null) {
+				secondaryColor = ChatColor.getByChar(colorCode.replace("&", ""));
+			}
+		}
+		return secondaryColor == null ? ChatColor.GRAY : secondaryColor;
+	}
+	
+	/**
+	 * @return The third ChatColor configured in the plugins lang file, or the secondary color by default if
+	 * no color is configured
+	 */
+	public ChatColor getTertiaryColor() {
+		if (tertiaryColor == null) {
+			String colorCode = getRawMessage("tertiary-color");
+			if (colorCode != null) {
+				tertiaryColor = ChatColor.getByChar(colorCode.replace("&", ""));
+			}
+		}
+		return tertiaryColor == null ? getSecondaryColor() : tertiaryColor;
+	}
+	
+	/**
+	 * Clear any cached messages forcing them to pull them from the config again
+	 */
+	public void clearCache() {
+		cachedMessages.clear();
+		primaryColor = null;
+		secondaryColor = null;
+	}
+	
+	
+	private String getRawMessage(String path) {
+		String rawMessage = null;
+		if (cachedMessages.containsKey(path)) {
+			rawMessage = cachedMessages.get(path);
+		} else {
+			rawMessage = plugin.getLangFile().getConfig().getString(path);
+			cachedMessages.put(path, rawMessage);
+		}
+		if (rawMessage == null) {
+			plugin.getLogger().log(Level.SEVERE, "Failed to retrieve message '" + path + "' from lang file!");
+		}
+		return rawMessage;
+	}
 	
 	//using the raw section symbol in the message does not seem to work on some spigot builds, so inject the ChatColor
 	private String injectColors(String message) {
@@ -176,26 +247,6 @@ public class Messenger {
 			}
 		}
 		return mainCmd;
-	}
-	
-	private ChatColor getPrimaryColor() {
-		if (primaryColor == null) {
-			String colorCode = getMessage("primary-color", true);
-			if (colorCode != null) {
-				primaryColor = ChatColor.getByChar(colorCode.replace("&", ""));
-			}
-		}
-		return primaryColor;
-	}
-	
-	private ChatColor getSecondaryColor() {
-		if (secondaryColor == null) {
-			String colorCode = getMessage("secondary-color", true);
-			if (colorCode != null) {
-				secondaryColor = ChatColor.getByChar(colorCode.replace("&", ""));
-			}
-		}
-		return secondaryColor;
 	}
 
 }

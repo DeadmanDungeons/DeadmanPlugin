@@ -14,7 +14,12 @@ import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.metadata.MetadataValue;
 
+/**
+ * Do not instantiate this class. Public constructor must be provided to be extended from each plugin
+ * @author Jon
+ */
 public class DeadmanUtils {
 	
 	/**
@@ -41,16 +46,16 @@ public class DeadmanUtils {
 		long seconds = TimeUnit.MILLISECONDS.toSeconds(millis) - (TimeUnit.MILLISECONDS.toMinutes(millis) * 60);
 		
 		if (days != 0) {
-			formattedTimer += days + " days";
+			formattedTimer += days + " day" + (days > 1 ? "s" : "");
 		}
 		if (hours != 0) {
-			formattedTimer += (formattedTimer.length() != 0 ? ", " : "") + hours + " hours";
+			formattedTimer += (formattedTimer.length() != 0 ? ", " : "") + hours + " hour" + (hours > 1 ? "s" : "");
 		}
 		if (minutes != 0 && days == 0) {
-			formattedTimer += (formattedTimer.length() != 0 ? ", " : "") + minutes + " minutes";
+			formattedTimer += (formattedTimer.length() != 0 ? ", " : "") + minutes + " minute" + (minutes > 1 ? "s" : "");
 		}
 		if (seconds != 0 && days == 0 && hours == 0) {
-			formattedTimer += (formattedTimer.length() != 0 ? ", " : "") + seconds + " seconds";
+			formattedTimer += (formattedTimer.length() != 0 ? ", " : "") + seconds + " second" + (seconds > 1 ? "s" : "");
 		}
 
 		return formattedTimer;
@@ -62,12 +67,12 @@ public class DeadmanUtils {
 	 * <br>Example time amounts:
 	 * <ul><li>11d:12h:30m</li><li>5d:30m</li><li>5d:45m</li><li>45m</li></ul>
 	 * 
-	 * @param durationLine
+	 * @param duration - The amount of time given in the format stated above
 	 * @return the duration of time in milliseconds from the sign formatted duration String
 	 */
-	public static long getDuration(String durationLine) {
-		if (durationLine != null) {
-			if (durationLine.matches("^\\d+[dD](:\\d+[hH](:\\d+[mM])?)?$|^\\d+[dD]:\\d+[mM]$|^\\d+[hH](:\\d+[mM])?$|^\\d+[mM]$")) {
+	public static long getDuration(String duration) {
+		if (duration != null) {
+			if (duration.matches("^\\d+[dD](:\\d+[hH](:\\d+[mM])?)?$|^\\d+[dD]:\\d+[mM]$|^\\d+[hH](:\\d+[mM])?$|^\\d+[mM]$")) {
 				int days = 0;
 				int hours = 0;
 				int minutes = 0;
@@ -76,19 +81,19 @@ public class DeadmanUtils {
 				Matcher matcher;
 				String daysRegex = "\\d+[dD]";
 				pattern = Pattern.compile(daysRegex); 
-				matcher = pattern.matcher(durationLine);
+				matcher = pattern.matcher(duration);
 				if (matcher.find()) {
 					days = Integer.parseInt(matcher.group().replaceAll("[^\\d]", ""));
 				}
 				String hoursRegex = "\\d+[hH]";
 				pattern = Pattern.compile(hoursRegex); 
-				matcher = pattern.matcher(durationLine);
+				matcher = pattern.matcher(duration);
 				if (matcher.find()) {
 					hours = Integer.parseInt(matcher.group().replaceAll("[^\\d]", ""));
 				}
 				String minutesRegex = "\\d+[mM]";
 				pattern = Pattern.compile(minutesRegex); 
-				matcher = pattern.matcher(durationLine);
+				matcher = pattern.matcher(duration);
 				if (matcher.find()) {
 					minutes = Integer.parseInt(matcher.group().replaceAll("[^\\d]", ""));
 				}
@@ -146,6 +151,17 @@ public class DeadmanUtils {
 		return sign;
 	}
 	
+	public static void resetSign(LocationMetadata signLoc) {
+		MetadataValue blockIdVal = signLoc.getMetaData().get(Keys.BLOCKID);
+		MetadataValue blockDataVal = signLoc.getMetaData().get(Keys.BLOCKDATA);
+		if (blockIdVal != null && blockDataVal != null) {
+			int blockId = blockIdVal.asInt();
+			byte blockData = blockDataVal.asByte();
+			if (blockId == 68 || blockId == 63) {
+				signLoc.getBlock().setTypeIdAndData(blockId, blockData, true);
+			}
+		}
+	}
 	
 	public static void clearSign(Sign sign) {
 		sign.setLine(0, "");
@@ -155,12 +171,6 @@ public class DeadmanUtils {
 		sign.update();
 	}
 	
-	/**
-	 * TODO remove deprecated. put this here to remind myself that the parameter is the colro string and not the config path
-	 * @param color
-	 * @return
-	 */
-	@Deprecated
 	public static ChatColor getChatColor(String color) {
 		ChatColor signColor = null;
 		if (isColorValid(color)) {
@@ -180,11 +190,11 @@ public class DeadmanUtils {
 		return false;
 	}
 	
-	public static String formatList(List<String> list) {
+	public static String formatList(List<String> list, ChatColor primary, ChatColor secondary) {
 		String result = "";
 		if (list.size() > 0) {
 			for (int n=0; n<list.size(); n++) {
-				result += (n != 0) ? (n == list.size() -1 ? ChatColor.GRAY + " and " : ChatColor.GRAY + ", ") + ChatColor.GOLD + list.get(n) : ChatColor.GOLD + list.get(n);
+				result += (n != 0) ? (n == list.size() -1 ? secondary + " and " : secondary + ", ") + primary + list.get(n) : primary + list.get(n);
 			}
 		} else {
 			result = ChatColor.RED + "none";
@@ -192,15 +202,6 @@ public class DeadmanUtils {
 		
 		return result;
 	}
-	
-	public static String seperateElements(String[] args, String seperator) {
-		String cmdStr = "";
-		for (int i=0; i<args.length; i++) {
-			cmdStr += (i > 0 ? seperator : "") + args[i];
-		}
-		return cmdStr;
-	}
-	
 	
 	public static boolean isInteger(String number) {
 		try {
