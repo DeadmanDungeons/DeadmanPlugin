@@ -130,16 +130,36 @@ public class DeadmanUtils {
 		return false;
 	}
 	
+	/**
+	 * Check if a players inventory has 1 or more open spaces
+	 * @param player - The player to check
+	 * @return true if the players inventory has 1 or more open inventory slots, and false otherwise
+	 */
 	public static boolean isInventoryFree(Player player) {
-	    Inventory inv = player.getInventory();
+	    return isInventoryFree(player, 1);
+	}
+	
+	/**
+	 * Check if a players inventory has 'amount' open spaces
+	 * @param player - The player to check
+	 * @param amount - The number of needed open invenotry slots to be considered free
+	 * @return true if the players inventory has 'amount' or more open inventory slots, and false otherwise
+	 */
+    public static boolean isInventoryFree(Player player, int amount) {
+        Inventory inv = player.getInventory();
         ItemStack[] items = inv.getContents();
+        int emptySlots = 0;
         for (ItemStack is : items) {
             if (is == null) {
-                return true;
+                emptySlots++;
             }
         }
-		return false;
-	}
+        if (emptySlots >= amount) {
+            return true;
+        }
+        return false;
+    }
+
 
 
 	public static Sign getSignState(final Block block) {

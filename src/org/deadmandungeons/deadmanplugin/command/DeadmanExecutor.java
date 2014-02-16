@@ -183,45 +183,49 @@ public abstract class DeadmanExecutor implements CommandExecutor {
 		ArgumentInfo[] cmdArgs = null;
 		SubCommandInfo[] subCommands = command.getClass().getAnnotation(CommandInfo.class).subCommands();
 		
-		//determine which command syntax the sender was using by matching the general syntax
-		List<ArgumentInfo> matchingArgs = new ArrayList<ArgumentInfo>();
-		for (int i=0; i<subCommands.length; i++) {
-			ArgumentInfo[] arguments = subCommands[i].arguments();
-			boolean isExecutedCmd = true;
-			if (args.length <= arguments.length) {
-				for (int n=0; n<arguments.length; n++) {
-					//if the amount of given arguments is greater than the current index
-					if (args.length > n) {
-						//if the argType is a String, and the given argument isn't a variable. else if the argument is a variable
-						if (arguments[n].argType().equals(String.class) && !arguments[n].argName().matches(VARIABLE_REGEX)) {
-							if (arguments[n].argName().equalsIgnoreCase(args[n])) {
+		if (subCommands.length > 0) {
+			//determine which command syntax the sender was using by matching the general syntax
+			List<ArgumentInfo> matchingArgs = new ArrayList<ArgumentInfo>();
+			for (int i=0; i<subCommands.length; i++) {
+				ArgumentInfo[] arguments = subCommands[i].arguments();
+				boolean isExecutedCmd = true;
+				if (args.length <= arguments.length) {
+					for (int n=0; n<arguments.length; n++) {
+						//if the amount of given arguments is greater than the current index
+						if (args.length > n) {
+							//if the argType is a String, and the given argument isn't a variable. else if the argument is a variable
+							if (arguments[n].argType().equals(String.class) && !arguments[n].argName().matches(VARIABLE_REGEX)) {
+								if (arguments[n].argName().equalsIgnoreCase(args[n])) {
+									matchingArgs.add(arguments[n]);
+								} else {
+									matchingArgs.clear();
+									isExecutedCmd = false;
+									break;
+								}
+							}
+							else if (arguments[n].argName().matches(VARIABLE_REGEX)) {
 								matchingArgs.add(arguments[n]);
 							} else {
 								matchingArgs.clear();
 								isExecutedCmd = false;
 								break;
 							}
-						}
-						else if (arguments[n].argName().matches(VARIABLE_REGEX)) {
-							matchingArgs.add(arguments[n]);
 						} else {
-							matchingArgs.clear();
-							isExecutedCmd = false;
-							break;
-						}
-					} else {
-						//if the argType is not an optional variable
-						if (!arguments[n].argName().matches(OPT_VARIABLE_REGEX)) {
-							matchingArgs.clear();
-							isExecutedCmd = false;
-							break;
+							//if the argType is not an optional variable
+							if (!arguments[n].argName().matches(OPT_VARIABLE_REGEX)) {
+								matchingArgs.clear();
+								isExecutedCmd = false;
+								break;
+							}
 						}
 					}
 				}
+				if (isExecutedCmd) {
+					cmdArgs = matchingArgs.toArray(new ArgumentInfo[matchingArgs.size()]);
+				}
 			}
-			if (isExecutedCmd) {
-				cmdArgs = matchingArgs.toArray(new ArgumentInfo[matchingArgs.size()]);
-			}
+		} else {
+			cmdArgs = new ArgumentInfo[0];
 		}
 		return cmdArgs;
 	}

@@ -21,11 +21,11 @@ import org.deadmandungeons.deadmanplugin.command.SubCommandInfo;
 public class Messenger {
 	
 	//The Regex to find any variables in the language file
-	private final String VARIABLE_REGEX = "<[^>]+>";
-	private final Pattern VARIABLE_PATTERN = Pattern.compile(VARIABLE_REGEX);
+	private static final String VARIABLE_REGEX = "<[^>]+>";
+	private static final Pattern VARIABLE_PATTERN = Pattern.compile(VARIABLE_REGEX);
 	//The Regex to find any formatting codes in a message
-	private final String FORMATTING_REGEX = "&[\\da-fk-or]";
-	private final Pattern FORMAT_PATTERN = Pattern.compile(FORMATTING_REGEX);
+	private static final String FORMATTING_REGEX = "&[\\da-fk-or]";
+	private static final Pattern FORMAT_PATTERN = Pattern.compile(FORMATTING_REGEX);
 	
 	private Map<String, String> cachedMessages = new HashMap<String, String>();
 	
@@ -67,14 +67,11 @@ public class Messenger {
 	 * @return the String message at the given path with the given variables injected along with any colors if colorCode is flagged as true
 	 */
 	public String getMessage(String path, boolean colorCode, Object... vars) {
-		String message = getMessage(path, true);
+		String message = getMessage(path, colorCode);
 		if (message != null && message.length() != 0) {
 			Matcher matcher = VARIABLE_PATTERN.matcher(message);
 			for (int i=0; i<vars.length && matcher.find(); i++) {
 				message = message.replace(matcher.group(), vars[i].toString());
-			}
-			if (!colorCode) {
-				message = message.replaceAll(FORMATTING_REGEX, "");
 			}
 		}
 		return message;
