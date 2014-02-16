@@ -2,6 +2,11 @@ package org.deadmandungeons.deadmanplugin;
 
 import org.bukkit.block.Sign;
 
+/**
+ * This abstract class should be extended by any objects representing a certain Sign type, and that
+ * reference a certain ConfigObject.
+ * @author Jon
+ */
 public abstract class DeadmanSign {
 	
 	private Sign sign;

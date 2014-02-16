@@ -64,8 +64,8 @@ public abstract class DeadmanPlugin extends JavaPlugin {
 	 * @param signType - The DeadmanSign subclass that should be registered
 	 * @param signTag - The sign tag (first line) that identifies a sign to be of this type
 	 */
-	public <T1 extends DeadmanSign> void registerSignEvents(Class<T1> signType, String signTag) {
-		getServer().getPluginManager().registerEvents(new SignEventListener<T1>(this, signType, signTag), this);
+	public <T extends DeadmanSign> void registerSignEvents(Class<T> signType, String signTag) {
+		getServer().getPluginManager().registerEvents(new SignEventListener<T>(this, signType, signTag), this);
 	}
 	
 	public Economy getEconomy() {

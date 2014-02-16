@@ -4,6 +4,11 @@ import org.bukkit.event.HandlerList;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.deadmandungeons.deadmanplugin.DeadmanSign;
 
+/**
+ * This Event will be fired when a DeadmanSign of type T is broken
+ * @param <T> - The DeadmanSign subclass that was involved in the SignBreakEvent
+ * @author Jon
+ */
 public class SignBreakEvent<T extends DeadmanSign> extends BlockBreakEvent {
 	
 	private static final HandlerList handlers = new HandlerList();
@@ -24,6 +29,9 @@ public class SignBreakEvent<T extends DeadmanSign> extends BlockBreakEvent {
         return handlers;
     }
 	
+    /**
+     * @return The DeadmanSign subclass object that was broken
+     */
 	public T getSign() {
 		return deadmanSign;
 	}

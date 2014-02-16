@@ -5,6 +5,11 @@ import org.bukkit.event.HandlerList;
 import org.bukkit.event.block.SignChangeEvent;
 import org.deadmandungeons.deadmanplugin.DeadmanSign;
 
+/**
+ * This Event will be fired when a DeadmanSign of type T is created (based on the first line of the sign)
+ * @param <T> - The DeadmanSign subclass that was involved in the SignCreateEvent
+ * @author Jon
+ */
 public class SignCreateEvent<T extends DeadmanSign> extends SignChangeEvent {
 
 	private static final HandlerList handlers = new HandlerList();
@@ -25,6 +30,9 @@ public class SignCreateEvent<T extends DeadmanSign> extends SignChangeEvent {
         return handlers;
     }
 	
+    /**
+     * @return The DeadmanSign subclass object that was created
+     */
 	public Sign getSign() {
 		return sign;
 	}
