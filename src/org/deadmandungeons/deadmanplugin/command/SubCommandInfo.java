@@ -16,4 +16,11 @@ public @interface SubCommandInfo {
 	 */
 	public String description();
 	
+	/**
+	 * An array of permission nodes to check before executing the command. 
+	 * Only one permission node is needed to execute.
+	 * Further permission checks may be made in the command execute method
+	 */
+	public String[] permissions() default {};
+	
 }

@@ -21,9 +21,11 @@ public @interface CommandInfo {
     public String description();
     
     /**
-     * The permission required to execute this command.
-     */
-    public String permission();
+	 * An array of permission nodes to check before executing this command and any of its sub commands. 
+	 * Only one permission node is needed to execute.
+	 * Further permission checks may be made for the executed subCommand and/or the commands execute method
+	 */
+	public String[] permissions() default {};
     
     /**
      * A flag stating whether or not the command can only be executed in-game.

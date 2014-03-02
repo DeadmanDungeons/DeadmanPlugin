@@ -11,6 +11,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.deadmandungeons.deadmanplugin.command.Command;
 import org.deadmandungeons.deadmanplugin.command.CommandInfo;
+import org.deadmandungeons.deadmanplugin.command.DeadmanExecutor;
 import org.deadmandungeons.deadmanplugin.command.SubCommandInfo;
 
 /**
@@ -97,7 +98,7 @@ public class Messenger {
 	 */
 	public void sendCommandInfo(Command cmd, CommandSender sender) {
         CommandInfo info = cmd.getClass().getAnnotation(CommandInfo.class);
-        if (sender.hasPermission(info.permission())) {
+        if (info.permissions().length == 0 || DeadmanExecutor.hasCommandPerm(sender, info.permissions())) {
         	sender.sendMessage(ChatColor.BOLD + "" + getPrimaryColor() + info.name() + " Command");
         	SubCommandInfo[] commands = info.subCommands();
         	if (commands.length == 0) {

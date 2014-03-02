@@ -1,6 +1,10 @@
 package org.deadmandungeons.deadmanplugin.events;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.block.Sign;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -13,24 +17,20 @@ import org.deadmandungeons.deadmanplugin.DeadmanUtils;
 
 /**
  * This listener class is what invokes the DeadmanSign events for DeadmanSigns of type T.<br />
- * Call {@link org.deadmandungeons.deadmanplugin.DeadmanPlugin.registerSignEvent registerSignEvent(Class&lt;T&gt; signType, String signTag)}
- * for each DeadmanSign type that the plugin will be listening to.
+ * Construct this object for each DeadmanSign type that the plugin will be listening to.
+ * There is no need to register this listener because it will register itself upon construction
  * @param <T> - The DeadmanSign sublcass involved in the DeadmanSign events
  * @author Jon
  */
-@SuppressWarnings("unchecked")//Except it is checked
 public class SignEventListener<T extends DeadmanSign> implements Listener {
 	
-	//TODO maybe the pluginSigns hashMap should be a member variable in this listener, and have a value type of T.
+	private Map<Location, T> deadmanSigns = new HashMap<Location, T>();
 	
-	private DeadmanPlugin plugin;
-	private Class<T> signType;
 	private String signTag;
 	
-	public SignEventListener(DeadmanPlugin instance, Class<T> signType, String signTag) {
-		this.plugin = instance;
-		this.signType = signType;
+	public <U extends DeadmanPlugin> SignEventListener(String signTag, U plugin) {
 		this.signTag = signTag;
+		Bukkit.getServer().getPluginManager().registerEvents(this, plugin);
 	}
 	
 	@EventHandler
@@ -45,10 +45,9 @@ public class SignEventListener<T extends DeadmanSign> implements Listener {
 	
 	@EventHandler
 	public void onSignBreak(BlockBreakEvent event) {
-		Object deadmanSign = plugin.getPluginSigns().get(event.getBlock().getLocation());
-		if (deadmanSign != null && signType.isInstance(deadmanSign)) {
-			T sign = (T) deadmanSign;
-			SignBreakEvent<T> signBreakEvent = new SignBreakEvent<T>(event, sign);
+		T deadmanSign = deadmanSigns.get(event.getBlock().getLocation());
+		if (deadmanSign != null) {
+			SignBreakEvent<T> signBreakEvent = new SignBreakEvent<T>(event, deadmanSign);
 			
 			Bukkit.getServer().getPluginManager().callEvent(signBreakEvent);
 		}
@@ -56,13 +55,21 @@ public class SignEventListener<T extends DeadmanSign> implements Listener {
 	
 	@EventHandler
 	public void onPlayerInteract(PlayerInteractEvent event) {
-		Object deadmanSign = plugin.getPluginSigns().get(event.getClickedBlock().getLocation());
-		if (deadmanSign != null && signType.isInstance(deadmanSign)) {
-			T sign = (T) deadmanSign;
-			SignClickEvent<T> signClickEvent = new SignClickEvent<T>(event, sign);
-			
-			Bukkit.getServer().getPluginManager().callEvent(signClickEvent);
+		if (event.getClickedBlock() != null) {
+			T deadmanSign = deadmanSigns.get(event.getClickedBlock().getLocation());
+			if (deadmanSign != null) {
+				SignClickEvent<T> signClickEvent = new SignClickEvent<T>(event, deadmanSign);
+				
+				Bukkit.getServer().getPluginManager().callEvent(signClickEvent);
+			}
 		}
+	}
+	
+	/**
+	 * @return The reference to all of the DeadmanSigns of type T for this plugin
+	 */
+	public Map<Location, T> getDeadmanSigns() {
+		return deadmanSigns;
 	}
 	
 }

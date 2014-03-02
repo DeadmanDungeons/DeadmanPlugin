@@ -126,7 +126,7 @@ public abstract class DeadmanExecutor implements CommandExecutor {
         Command command = matches.get(0);
         CommandInfo info = command.getClass().getAnnotation(CommandInfo.class);
         
-        if (!sender.hasPermission(info.permission())) {
+        if (info.permissions().length > 0 && !hasCommandPerm(sender, info.permissions())) {
         	plugin.getMessenger().sendMessage(sender, "failed.no-permission");
             return false;
         }
@@ -143,12 +143,26 @@ public abstract class DeadmanExecutor implements CommandExecutor {
         }
         
         String[] params = Arrays.copyOfRange(args, 1, args.length);
-        ArgumentInfo[] executedArgs = getExecutedArgs(command, params);
-        if (executedArgs == null) {
-        	plugin.getMessenger().sendMessage(sender, "failed.invalid-args-alt");
-        	plugin.getMessenger().sendCommandInfo(command, sender);
-        	return false;
+        SubCommandInfo[] subCmds = command.getClass().getAnnotation(CommandInfo.class).subCommands();
+        ArgumentInfo[] executedArgs = null;
+        if (subCmds.length != 0) {
+        	SubCommandInfo executedSubCmd = getExecutedSubCmd(subCmds, params);
+            if (executedSubCmd == null) {
+            	plugin.getMessenger().sendMessage(sender, "failed.invalid-args-alt");
+            	plugin.getMessenger().sendCommandInfo(command, sender);
+            	return false;
+            } else {
+            	if (executedSubCmd.permissions().length > 0 && !hasCommandPerm(sender, executedSubCmd.permissions())) {
+            		plugin.getMessenger().sendMessage(sender, "failed.no-permission");
+                    return false;
+            	} else {
+            		executedArgs = executedSubCmd.arguments();
+            	}
+            }
+        } else {
+        	executedArgs = new ArgumentInfo[0];
         }
+        
         Object[] argumentObjects = convertArguments(sender, params, executedArgs);
         if (argumentObjects != null) {
         	return command.execute(sender, argumentObjects);
@@ -179,55 +193,44 @@ public abstract class DeadmanExecutor implements CommandExecutor {
 		return null;
 	}
 	
-	private ArgumentInfo[] getExecutedArgs(Command command, String[] args) {
-		ArgumentInfo[] cmdArgs = null;
-		SubCommandInfo[] subCommands = command.getClass().getAnnotation(CommandInfo.class).subCommands();
+	private SubCommandInfo getExecutedSubCmd(SubCommandInfo[] subCommands, String[] args) {
+		SubCommandInfo subCmd = null;
 		
-		if (subCommands.length > 0) {
-			//determine which command syntax the sender was using by matching the general syntax
-			List<ArgumentInfo> matchingArgs = new ArrayList<ArgumentInfo>();
-			for (int i=0; i<subCommands.length; i++) {
-				ArgumentInfo[] arguments = subCommands[i].arguments();
-				boolean isExecutedCmd = true;
-				if (args.length <= arguments.length) {
-					for (int n=0; n<arguments.length; n++) {
-						//if the amount of given arguments is greater than the current index
-						if (args.length > n) {
-							//if the argType is a String, and the given argument isn't a variable. else if the argument is a variable
-							if (arguments[n].argType().equals(String.class) && !arguments[n].argName().matches(VARIABLE_REGEX)) {
-								if (arguments[n].argName().equalsIgnoreCase(args[n])) {
-									matchingArgs.add(arguments[n]);
-								} else {
-									matchingArgs.clear();
-									isExecutedCmd = false;
-									break;
-								}
-							}
-							else if (arguments[n].argName().matches(VARIABLE_REGEX)) {
-								matchingArgs.add(arguments[n]);
-							} else {
-								matchingArgs.clear();
-								isExecutedCmd = false;
-								break;
-							}
-						} else {
-							//if the argType is not an optional variable
-							if (!arguments[n].argName().matches(OPT_VARIABLE_REGEX)) {
-								matchingArgs.clear();
+		//determine which command syntax the sender was using by matching the general syntax
+		//List<ArgumentInfo> matchingArgs = new ArrayList<ArgumentInfo>();
+		for (int i=0; i<subCommands.length; i++) {
+			ArgumentInfo[] arguments = subCommands[i].arguments();
+			boolean isExecutedCmd = true;
+			if (args.length <= arguments.length) {
+				for (int n=0; n<arguments.length; n++) {
+					//if the amount of given arguments is greater than the current index
+					if (args.length > n) {
+						//if the argType is a String, and the given argument isn't a variable. else if the argument is a variable
+						if (arguments[n].argType().equals(String.class) && !arguments[n].argName().matches(VARIABLE_REGEX)) {
+							if (!arguments[n].argName().equalsIgnoreCase(args[n])) {
 								isExecutedCmd = false;
 								break;
 							}
 						}
+						else if (!arguments[n].argName().matches(VARIABLE_REGEX)) {
+							isExecutedCmd = false;
+							break;
+						}
+					} else {
+						//if the argType is not an optional variable
+						if (!arguments[n].argName().matches(OPT_VARIABLE_REGEX)) {
+							isExecutedCmd = false;
+							break;
+						}
 					}
 				}
-				if (isExecutedCmd) {
-					cmdArgs = matchingArgs.toArray(new ArgumentInfo[matchingArgs.size()]);
-				}
 			}
-		} else {
-			cmdArgs = new ArgumentInfo[0];
+			if (isExecutedCmd) {
+				subCmd = subCommands[i];
+				break;
+			}
 		}
-		return cmdArgs;
+		return subCmd;
 	}
 	
 	private Object[] convertArguments(CommandSender sender, String[] fromArgs, ArgumentInfo[] toArgs) {
@@ -330,6 +333,20 @@ public abstract class DeadmanExecutor implements CommandExecutor {
         }
 		CommandInfo info = command.getAnnotation(CommandInfo.class);
 		return getCommands().get(info.pattern());
+	}
+	
+	/**
+	 * @param sender - The CommandSender to check for permission
+	 * @param perms - An array of permission nodes to check against the player
+	 * @return true if the sender has at least 1 of the permission nodes, and false if they have none
+	 */
+	public static boolean hasCommandPerm(CommandSender sender, String[] perms) {
+		for (String perm : perms) {
+			if (sender.hasPermission(perm)) {
+				return true;
+			}
+		}
+		return false;
 	}
 	
 	

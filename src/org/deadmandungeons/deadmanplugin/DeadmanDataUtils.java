@@ -20,9 +20,16 @@ import org.bukkit.World;
  * Use the {@link Keys} enum to map each value.
  * @author Jon
  */
-public class StringDataUtils {
+public class DeadmanDataUtils {
 	
-	private StringDataUtils(){}
+	/**
+	 * Do not instantiate this class. Public constructor must be provided to be extended from each plugin
+	 * @throws AssertionError
+	 */
+	public DeadmanDataUtils() throws AssertionError {
+		throw new AssertionError("Do not instantiate this class. Public constructor " 
+				+ "must be provided to be extended from each plugin");
+	}
 	
 	/**
 	 * This is used to convert the given String entry into a Location object.<br />
