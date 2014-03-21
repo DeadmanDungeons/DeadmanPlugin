@@ -7,6 +7,11 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.metadata.MetadataValue;
 
+/**
+ * This subclass of {@link org.bukkit.Location Location} adds the ability to store a MetadataValue
+ * for the location mainly because this is more convenient that using {@link org.bukkit.block.Block Block} Metadata
+ * @author Jon
+ */
 public class LocationMetadata extends Location {
 	
 	private Map<Keys, MetadataValue> metaData;

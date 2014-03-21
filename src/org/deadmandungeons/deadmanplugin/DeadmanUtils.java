@@ -9,12 +9,12 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
-import org.bukkit.block.BlockState;
 import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.MetadataValue;
+import org.bukkit.util.BlockIterator;
 
 /**
  * Do not instantiate this class. Public constructor must be provided to be extended from each plugin
@@ -119,6 +119,18 @@ public class DeadmanUtils {
 		}
 	}
 	
+	public static Block getTargetBlock(Player player, Integer range) {
+		Block block = null;
+        BlockIterator iter = new BlockIterator(player, range);
+        while (iter.hasNext()) {
+        	block = iter.next();
+            if (!block.getType().equals(Material.AIR)) {
+            	return block;
+            }
+        }
+        return null;
+    }
+	
 	public static boolean isPlayerWithinRadius(Player player, Location loc, double radius)  {
 		double x = (loc.getX() + .5) - player.getLocation().getX();
 		double y = (loc.getY() + .5) - player.getLocation().getY();
@@ -160,15 +172,14 @@ public class DeadmanUtils {
         return false;
     }
 
-
-
 	public static Sign getSignState(final Block block) {
 		Sign sign = null;
-		if(block.getType().equals(Material.SIGN_POST) || block.getType().equals(Material.WALL_SIGN)) {
-			BlockState bs = block.getState();
-			sign = (Sign) bs;
+		if (block != null) {
+			if(block.getType().equals(Material.SIGN_POST) || block.getType().equals(Material.WALL_SIGN)) {
+	            sign = (Sign) block.getState();
+	        }
 		}
-		return sign;
+        return sign;
 	}
 	
 	public static void resetSign(LocationMetadata signLoc) {
@@ -184,43 +195,30 @@ public class DeadmanUtils {
 	}
 	
 	public static void clearSign(Sign sign) {
-		sign.setLine(0, "");
-		sign.setLine(1, "");
-		sign.setLine(2, "");
-		sign.setLine(3, "");
-		sign.update();
+		if (sign != null) {
+			sign.setLine(0, "");
+			sign.setLine(1, "");
+			sign.setLine(2, "");
+			sign.setLine(3, "");
+			sign.update();
+		}
 	}
 	
 	public static ChatColor getChatColor(String color) {
-		ChatColor signColor = null;
-		if (isColorValid(color)) {
-			if (ChatColor.valueOf(color).isColor()) {
-				signColor = ChatColor.valueOf(color);
+		if (color != null) {
+			if (color.length() == 1) {
+				return ChatColor.getByChar(color.charAt(0));
+			}
+			else if (color.length() == 2 && color.startsWith("&")) {
+				return ChatColor.getByChar(color.charAt(1));
+			}
+			for (ChatColor chatColor : ChatColor.values()) {
+				if (chatColor.name().equalsIgnoreCase(color)) {
+					return chatColor;
+				}
 			}
 		}
-		return signColor;
-	}
-	
-	public static boolean isColorValid(String color) {
-		for (ChatColor chatColor : ChatColor.values()) {
-			if (chatColor.name().equals(color)) {
-				return true;
-			}
-		}
-		return false;
-	}
-	
-	public static String formatList(List<String> list, ChatColor primary, ChatColor secondary) {
-		String result = "";
-		if (list.size() > 0) {
-			for (int n=0; n<list.size(); n++) {
-				result += (n != 0) ? (n == list.size() -1 ? secondary + " and " : secondary + ", ") + primary + list.get(n) : primary + list.get(n);
-			}
-		} else {
-			result = ChatColor.RED + "none";
-		}
-		
-		return result;
+		return null;
 	}
 	
 	public static boolean isInteger(String number) {

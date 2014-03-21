@@ -22,7 +22,7 @@ import org.deadmandungeons.deadmanplugin.DeadmanUtils;
  * @param <T> - The DeadmanSign sublcass involved in the DeadmanSign events
  * @author Jon
  */
-public class SignEventListener<T extends DeadmanSign> implements Listener {
+public abstract class SignEventListener<T extends DeadmanSign> implements Listener {
 	
 	private Map<Location, T> deadmanSigns = new HashMap<Location, T>();
 	
@@ -33,34 +33,34 @@ public class SignEventListener<T extends DeadmanSign> implements Listener {
 		Bukkit.getServer().getPluginManager().registerEvents(this, plugin);
 	}
 	
-	@EventHandler
+	@EventHandler(ignoreCancelled = true)
 	public void onSignCreate(SignChangeEvent event) {
 		Sign sign = DeadmanUtils.getSignState(event.getBlock());
 		if (sign != null && event.getLine(0).equals(signTag)) {
 			SignCreateEvent<T> signCreateEvent = new SignCreateEvent<T>(event, sign);
 			
-			Bukkit.getServer().getPluginManager().callEvent(signCreateEvent);
+			onSignCreate(signCreateEvent);
 		}
 	}
 	
-	@EventHandler
+	@EventHandler(ignoreCancelled = true)
 	public void onSignBreak(BlockBreakEvent event) {
 		T deadmanSign = deadmanSigns.get(event.getBlock().getLocation());
 		if (deadmanSign != null) {
 			SignBreakEvent<T> signBreakEvent = new SignBreakEvent<T>(event, deadmanSign);
 			
-			Bukkit.getServer().getPluginManager().callEvent(signBreakEvent);
+			onSignBreak(signBreakEvent);
 		}
 	}
 	
-	@EventHandler
+	@EventHandler(ignoreCancelled = true)
 	public void onPlayerInteract(PlayerInteractEvent event) {
 		if (event.getClickedBlock() != null) {
 			T deadmanSign = deadmanSigns.get(event.getClickedBlock().getLocation());
 			if (deadmanSign != null) {
 				SignClickEvent<T> signClickEvent = new SignClickEvent<T>(event, deadmanSign);
 				
-				Bukkit.getServer().getPluginManager().callEvent(signClickEvent);
+				onSignClick(signClickEvent);
 			}
 		}
 	}
@@ -71,5 +71,11 @@ public class SignEventListener<T extends DeadmanSign> implements Listener {
 	public Map<Location, T> getDeadmanSigns() {
 		return deadmanSigns;
 	}
+	
+	public abstract void onSignCreate(SignCreateEvent<T> event);
+	
+	public abstract void onSignBreak(SignBreakEvent<T> event);
+	
+	public abstract void onSignClick(SignClickEvent<T> event);
 	
 }

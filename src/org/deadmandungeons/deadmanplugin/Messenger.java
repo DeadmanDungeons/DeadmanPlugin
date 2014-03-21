@@ -1,6 +1,7 @@
 package org.deadmandungeons.deadmanplugin;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.regex.Matcher;
@@ -144,7 +145,7 @@ public class Messenger {
 	public void sendPluginInfo(CommandSender sender) {
 		PluginDescriptionFile pdf = plugin.getDescription();
 		sender.sendMessage(getSecondaryColor() + pdf.getName() + " Version: " + getPrimaryColor() + pdf.getVersion());
-		String authors = DeadmanUtils.formatList(pdf.getAuthors(), getPrimaryColor(), getSecondaryColor());
+		String authors = formatList(pdf.getAuthors());
 		sender.sendMessage(getSecondaryColor() + "Created By: " + getPrimaryColor() + authors);
 		sender.sendMessage(getSecondaryColor() + "Contact at: " + getPrimaryColor() + pdf.getWebsite());
 		if (getMainCmd() != null) {
@@ -192,6 +193,32 @@ public class Messenger {
 			}
 		}
 		return tertiaryColor == null ? getSecondaryColor() : tertiaryColor;
+	}
+	
+	/**
+	 * This method is used to format a List into a human readable String
+	 * using the primary and secondary colors defined in the plugins lang file.
+	 * The list will be formatted as: <list-val>, <list-val>, <list-val> and <list-val>
+	 * @param list - A list of objects to be formatted calling {@link java.lang.Object.toString toString}
+	 * @return A comma/'and' delimited String of all the values in the provided list
+	 */
+	public String formatList(List<?> list) {
+		String result = "";
+		if (list.size() > 0) {
+			ChatColor secondary = getSecondaryColor();
+			ChatColor primary = getPrimaryColor();
+			for (int n=0; n<list.size(); n++) {
+				if (n != 0) {
+					result += (secondary + (n == list.size() -1 ?  " and " : ", "));
+				} else {
+					result += (primary + list.get(n).toString());
+				}
+			}
+		} else {
+			result = ChatColor.RED + "none";
+		}
+		
+		return result;
 	}
 	
 	/**

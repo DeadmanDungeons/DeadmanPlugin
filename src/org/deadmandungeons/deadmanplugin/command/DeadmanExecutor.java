@@ -195,9 +195,7 @@ public abstract class DeadmanExecutor implements CommandExecutor {
 	
 	private SubCommandInfo getExecutedSubCmd(SubCommandInfo[] subCommands, String[] args) {
 		SubCommandInfo subCmd = null;
-		
 		//determine which command syntax the sender was using by matching the general syntax
-		//List<ArgumentInfo> matchingArgs = new ArrayList<ArgumentInfo>();
 		for (int i=0; i<subCommands.length; i++) {
 			ArgumentInfo[] arguments = subCommands[i].arguments();
 			boolean isExecutedCmd = true;
@@ -234,24 +232,21 @@ public abstract class DeadmanExecutor implements CommandExecutor {
 	}
 	
 	private Object[] convertArguments(CommandSender sender, String[] fromArgs, ArgumentInfo[] toArgs) {
-		Object[] args = new Object[toArgs.length];
-		if (fromArgs != null && toArgs != null && fromArgs.length == toArgs.length) {
-			for (int i=0; i<toArgs.length; i++) {
-				Object convertedArg = fromArgs[i];
-				if (converters.containsKey(toArgs[i].argType())) {
-					convertedArg = converters.get(toArgs[i].argType()).convertCommandArg(sender, toArgs[i].argName(), fromArgs[i]);
-					if (convertedArg == null) {
-						return null;
-					}
+		List<Object> args = new ArrayList<Object>();
+		for (int i=0; i<toArgs.length && i<fromArgs.length; i++) {
+			Object convertedArg = fromArgs[i];
+			if (converters.containsKey(toArgs[i].argType())) {
+				convertedArg = converters.get(toArgs[i].argType()).convertCommandArg(sender, toArgs[i].argName(), fromArgs[i]);
+				if (convertedArg == null) {
+					return null;
 				}
-				else if (!toArgs[i].argType().equals(String.class)) {
-					plugin.getLogger().warning("An ArgumentConverter was not found for arguments of type '" + toArgs[i].argType().getCanonicalName() + "'");
-				}
-				args[i] = convertedArg;
 			}
+			else if (!toArgs[i].argType().equals(String.class)) {
+				plugin.getLogger().warning("An ArgumentConverter was not found for arguments of type '" + toArgs[i].argType().getCanonicalName() + "'");
+			}
+			args.add(convertedArg);
 		}
-		
-		return args;
+		return args.toArray(new Object[args.size()]);
 	}
 	
     /**

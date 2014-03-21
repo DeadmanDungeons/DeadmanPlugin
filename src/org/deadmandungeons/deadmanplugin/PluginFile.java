@@ -14,6 +14,7 @@ public class PluginFile {
 	
 	private final DeadmanPlugin plugin;
 	private final String filePath;
+	private final String defaultFilePath;
 	
 	private File configFile;
 	private FileConfiguration fileConfig;
@@ -25,12 +26,16 @@ public class PluginFile {
 	 * @param defaultFilePath - The path to the resource file bundled in the plugin's jar
 	 * that should be saved as the file specified by filePath if it does not already exist. 
 	 * If this is null, a new file will be created if one does not yet exist at filePath.
+	 * @throws IllegalStateException if the plugin has not yet been initialized
 	 */
 	public PluginFile(DeadmanPlugin instance, String filePath, String defaultFilePath) {
+		if (!instance.isJavaPluginLoaded()) {
+			throw new IllegalStateException("This plugin has not been loaded yet! Cannot create plugin file before plugin is loaded");
+		}
 		this.plugin = instance;
 		this.filePath = plugin.getDataFolder().getPath() + File.separator + filePath;
+		this.defaultFilePath = defaultFilePath;
 		this.configFile = new File(this.filePath);
-		this.defaultConfig = null;
 		
 		if (!configFile.exists()) {
 			try {
@@ -70,8 +75,11 @@ public class PluginFile {
 		}
 	}
 	
-	public void loadDefaultConfig() {        
-		InputStream defConfigStream = plugin.getResource(filePath);
+	public void loadDefaultConfig() {
+		if (defaultFilePath == null) {
+			throw new IllegalStateException("This PluginFile is not a resource file derived from the plugin jar. There is no default filePath");
+		}
+		InputStream defConfigStream = plugin.getResource(defaultFilePath);
 		if (defConfigStream != null) {
 			defaultConfig = YamlConfiguration.loadConfiguration(defConfigStream);
 		}

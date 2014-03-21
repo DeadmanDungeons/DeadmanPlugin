@@ -220,11 +220,9 @@ public class DeadmanDataUtils {
 	 * @return The World defined at the given key, or null if a WorldName value did not exist at the given Key
 	 */
 	public static World getWorld(String entry, Keys key) {
-		String regex = key + ".+?(?=,)";
-		Pattern patern = Pattern.compile(regex); 
-		Matcher matcher = patern.matcher(entry);
-		if (matcher.find()) {
-			return Bukkit.getWorld(matcher.group().replace(key.toString(), ""));
+		String worldEntry = getString(entry, key);
+		if (worldEntry != null) {
+			return Bukkit.getWorld(worldEntry.replace(key.toString(), ""));
 		}
 		return null;
 	}
