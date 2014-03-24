@@ -4,4 +4,4 @@ version: 1.0
 author: Weasel_Squeezer
 website: http://www.deadmandungeons.org
 
-softdepend: [Vault]
+softdepend: [Vault, WorldEdit, WorldGuard]

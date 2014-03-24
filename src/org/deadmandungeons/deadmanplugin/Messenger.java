@@ -1,5 +1,6 @@
 package org.deadmandungeons.deadmanplugin;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,6 +16,8 @@ import org.deadmandungeons.deadmanplugin.command.CommandInfo;
 import org.deadmandungeons.deadmanplugin.command.DeadmanExecutor;
 import org.deadmandungeons.deadmanplugin.command.SubCommandInfo;
 
+//TODO inject colors before variables to remove the need to specify colors in lang file
+//TODO maybe make the implementing Plugin specify the main command
 /**
  * A Messaging utility class that makes messaging Players with configured messages easy.
  * All messages will be injected with appropriate configured colors, and variables.
@@ -99,47 +102,63 @@ public class Messenger {
 	 */
 	public void sendCommandInfo(Command cmd, CommandSender sender) {
         CommandInfo info = cmd.getClass().getAnnotation(CommandInfo.class);
-        if (info.permissions().length == 0 || DeadmanExecutor.hasCommandPerm(sender, info.permissions())) {
-        	sender.sendMessage(ChatColor.BOLD + "" + getPrimaryColor() + info.name() + " Command");
-        	SubCommandInfo[] commands = info.subCommands();
-        	if (commands.length == 0) {
-        		sender.sendMessage(getSecondaryColor() + "  /" + getMainCmd() + " " + info.name());
-        	}
-        	if (info.description() != null && !info.description().trim().isEmpty()) {
-				sender.sendMessage(getTertiaryColor() + "    - " + info.description());
+    	sender.sendMessage(ChatColor.BOLD + "" + getPrimaryColor() + info.name() + " Command");
+    	SubCommandInfo[] commands = info.subCommands();
+    	if (commands.length == 0) {
+    		sender.sendMessage(getSecondaryColor() + "  /" + getMainCmd() + " " + info.name());
+    	}
+    	if (info.description() != null && !info.description().trim().isEmpty()) {
+			sender.sendMessage(getTertiaryColor() + "    - " + info.description());
+		}
+		for (SubCommandInfo cmdInfo : commands) {
+			String arguments = "";
+			for (int i=0; i<cmdInfo.arguments().length; i++) {
+				arguments += (i > 0 ? " " : "") + cmdInfo.arguments()[i].argName();
 			}
-    		if (commands.length > 0) {
-        		for (SubCommandInfo cmdInfo : commands) {
-        			String arguments = "";
-        			for (int i=0; i<cmdInfo.arguments().length; i++) {
-        				arguments += (i > 0 ? " " : "") + cmdInfo.arguments()[i].argName();
-        			}
-        			sender.sendMessage(getSecondaryColor() + "  /" + getMainCmd() + " " + info.name() + " " + arguments);
-        			if (cmdInfo.description() != null && !cmdInfo.description().trim().isEmpty()) {
-        				sender.sendMessage(getTertiaryColor() + "    - " + cmdInfo.description());
-        			}
-        		}
-    		}
-        }
+			sender.sendMessage(getSecondaryColor() + "  /" + getMainCmd() + " " + info.name() + " " + arguments);
+			if (cmdInfo.description() != null && !cmdInfo.description().trim().isEmpty()) {
+				sender.sendMessage(getTertiaryColor() + "    - " + cmdInfo.description());
+			}
+		}
     }
 	
 	/**
-	 * 
+	 * Only commands that the CommandSender has permissions for will be displayed. 5 commands
+	 * are displayed per page.
 	 * @param sender - The CommandSender to send the command help page to
 	 * @param commandMap - A Map containing all of the registered commands to be sent to the CommandSender
+	 * @param pageNum - The number of the page to send. Each page lists 5 commands
 	 */
-	public void sendHelpInfo(CommandSender sender, Map<String, Command> commandMap) {
-		String helpTitle = getPrimaryColor() + plugin.getName() + " Commands" + getTertiaryColor();
-		sender.sendMessage(getTertiaryColor() + "<============== " + helpTitle + " ==============>");
+	public void sendHelpInfo(CommandSender sender, Map<String, Command> commandMap, int pageNum) {
+		List<Command> cmdVals = new ArrayList<Command>();
 		for (Command cmd : commandMap.values()) {
-			sendCommandInfo(cmd, sender);
-			sender.sendMessage("");
-        }
+			CommandInfo info = cmd.getClass().getAnnotation(CommandInfo.class);
+	        if (DeadmanExecutor.hasCommandPerm(sender, info.permissions())) {
+	        	cmdVals.add(cmd);
+	        }
+		}
+		Command[] cmds = cmdVals.toArray(new Command[cmdVals.size()]);
+		
+		int maxPage = cmds.length / 5 + (cmds.length % 5 > 0 ? 1 : 0);
+		if (pageNum * 5 > cmds.length + 4) {
+			pageNum = maxPage;
+		}
+		
+		String paging = (cmds.length > 5 ? " [pg. " + pageNum + "/" + maxPage + "]" : "");
+		String helpTitle = getPrimaryColor() + plugin.getName() + " Commands" + paging + getTertiaryColor();
+		sender.sendMessage(getTertiaryColor() + "<============= " + helpTitle + " =============>");
+		for (int i=0; i<cmds.length && i < (pageNum * 5); i++) {
+			if (i >= (pageNum - 1) * 5) {
+				sendCommandInfo(cmds[i], sender);
+				if (i+1 != cmds.length && i+1 != pageNum * 5) {
+					sender.sendMessage("");
+				}
+			}
+		}	
 		sender.sendMessage(getTertiaryColor() + "<==================================================>");
 	}
 	
 	/**
-	 * 
 	 * @param sender - The CommandSender to send this plugin's information to
 	 */
 	public void sendPluginInfo(CommandSender sender) {

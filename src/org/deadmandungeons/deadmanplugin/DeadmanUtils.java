@@ -46,16 +46,19 @@ public class DeadmanUtils {
 		long seconds = TimeUnit.MILLISECONDS.toSeconds(millis) - (TimeUnit.MILLISECONDS.toMinutes(millis) * 60);
 		
 		if (days != 0) {
-			formattedTimer += days + " day" + (days > 1 ? "s" : "");
+			formattedTimer += days + " days";
 		}
 		if (hours != 0) {
-			formattedTimer += (formattedTimer.length() != 0 ? ", " : "") + hours + " hour" + (hours > 1 ? "s" : "");
+			String unit = (days != 0 || (days == 0 && minutes > 0) ? " hr" : "hour") + (hours > 1 ? "s" : "");
+			formattedTimer += (formattedTimer.length() != 0 ? ", " : "") + hours + unit;
 		}
 		if (minutes != 0 && days == 0) {
-			formattedTimer += (formattedTimer.length() != 0 ? ", " : "") + minutes + " minute" + (minutes > 1 ? "s" : "");
+			String unit = (hours != 0) ? " min" : "minute" + (minutes > 1 ? "s" : "");
+			formattedTimer += (formattedTimer.length() != 0 ? ", " : "") + minutes + unit;
 		}
-		if (seconds != 0 && days == 0 && hours == 0) {
-			formattedTimer += (formattedTimer.length() != 0 ? ", " : "") + seconds + " second" + (seconds > 1 ? "s" : "");
+		if (seconds != 0 && days == 0 && hours == 0 && minutes == 0) {
+			String unit = "second" + (seconds > 1 ? "s" : "");
+			formattedTimer += (formattedTimer.length() != 0 ? ", " : "") + seconds + unit;
 		}
 
 		return formattedTimer;

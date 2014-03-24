@@ -101,7 +101,8 @@ public abstract class DeadmanExecutor implements CommandExecutor {
             return true;
         }
         if (args[0].equals("?") || args[0].equalsIgnoreCase("help")) {
-        	plugin.getMessenger().sendHelpInfo(sender, commands);
+        	int pageNum = (args.length == 2 && DeadmanUtils.isInteger(args[1]) ? Integer.parseInt(args[1]) : 1);
+        	plugin.getMessenger().sendHelpInfo(sender, commands, pageNum);
             return true;
         }
         Command pseudoCommand = getPseudoCommand(args[0]);
