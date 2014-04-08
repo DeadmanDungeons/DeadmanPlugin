@@ -13,7 +13,7 @@ import org.bukkit.World;
  * <b>A utility class to get variables from a formatted string used for YAML data storage.</b> <br />
  * Variables that are stored as config data <b>entries</b> are in the following format:<br />
  * <code>&lt;key&gt;: &lt;value&gt;, &lt;key&gt;: &lt;value&gt;, &lt;key&gt;: &lt;value&gt;</code><br />
- * Example: <code>World: empire, X: 140, Y: 98, Z: 354, ID: 135, Data: 2</code><br /><br />
+ * Example: <code>World:empire, X:140, Y:98, Z:354, ID:135, Data:2</code><br /><br />
  * Variables that are stored as config data <b>keys</b> are in the following format:<br />
  * <code>X&lt;x-coord&gt;Y&lt;y-coord&gt;Z&lt;z-coord&gt;W&lt;world&gt;</code><br />
  * Example: X351Y154Z1478Wempire

@@ -200,6 +200,7 @@ public abstract class DeadmanExecutor implements CommandExecutor {
 		for (int i=0; i<subCommands.length; i++) {
 			ArgumentInfo[] arguments = subCommands[i].arguments();
 			boolean isExecutedCmd = true;
+			//if there is a less or equal amount of given arguments to this subCommand
 			if (args.length <= arguments.length) {
 				for (int n=0; n<arguments.length; n++) {
 					//if the amount of given arguments is greater than the current index
@@ -223,6 +224,8 @@ public abstract class DeadmanExecutor implements CommandExecutor {
 						}
 					}
 				}
+			} else {
+				isExecutedCmd = false;
 			}
 			if (isExecutedCmd) {
 				subCmd = subCommands[i];

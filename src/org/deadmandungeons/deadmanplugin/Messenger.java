@@ -46,7 +46,6 @@ public class Messenger {
 	}
 	
 	/**
-	 * 
 	 * @param path - String path name to the desired message in the plugin's language file
 	 * @param colorCode - boolean flag state weather message should returned with color injected or not
 	 * @return the configured message at the given path, with colors injected if colorCode is true
@@ -65,7 +64,6 @@ public class Messenger {
 	}
 	
 	/**
-	 * 
 	 * @param path - String path name to the desired message in the plugin's language file
 	 * @param colorCode - boolean flag state weather message should returned with color injected or not
 	 * @param vars - The variables to be injected in the message, given in the order that they occur
@@ -146,7 +144,8 @@ public class Messenger {
 		
 		String paging = (cmds.length > 5 ? " [pg. " + pageNum + "/" + maxPage + "]" : "");
 		String helpTitle = getPrimaryColor() + plugin.getName() + " Commands" + paging + getTertiaryColor();
-		sender.sendMessage(getTertiaryColor() + "<============= " + helpTitle + " =============>");
+		sender.sendMessage("");
+		sender.sendMessage(getTertiaryColor() + "<========= " + helpTitle + " =========>");
 		for (int i=0; i<cmds.length && i < (pageNum * 5); i++) {
 			if (i >= (pageNum - 1) * 5) {
 				sendCommandInfo(cmds[i], sender);
@@ -156,6 +155,7 @@ public class Messenger {
 			}
 		}	
 		sender.sendMessage(getTertiaryColor() + "<==================================================>");
+		sender.sendMessage("");
 	}
 	
 	/**
