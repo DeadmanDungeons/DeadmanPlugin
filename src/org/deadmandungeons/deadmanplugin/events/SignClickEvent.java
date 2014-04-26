@@ -3,13 +3,14 @@ package org.deadmandungeons.deadmanplugin.events;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.deadmandungeons.deadmanplugin.DeadmanSign;
+import org.deadmandungeons.deadmanplugin.SignObject;
 
 /**
  * This Event will be fired when a DeadmanSign of type T is clicked (left of right click)
  * @param <T> - The DeadmanSign subclass that was involved in the SignClickEvent
  * @author Jon
  */
-public class SignClickEvent<T extends DeadmanSign> extends PlayerInteractEvent {
+public class SignClickEvent<V extends SignObject, T extends DeadmanSign<V>> extends PlayerInteractEvent {
 	
 	private static final HandlerList handlers = new HandlerList();
 	
@@ -22,18 +23,18 @@ public class SignClickEvent<T extends DeadmanSign> extends PlayerInteractEvent {
 	
 	@Override
 	public HandlerList getHandlers() {
-        return handlers;
-    }
+		return handlers;
+	}
 	
-    public static HandlerList getHandlerList() {
-        return handlers;
-    }
+	public static HandlerList getHandlerList() {
+		return handlers;
+	}
 	
-    /**
-     * @return The DeadmanSign subclass object that was clicked
-     */
+	/**
+	 * @return The DeadmanSign subclass object that was clicked
+	 */
 	public T getSign() {
 		return deadmanSign;
 	}
-
+	
 }

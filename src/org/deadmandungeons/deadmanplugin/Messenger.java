@@ -1,6 +1,7 @@
 package org.deadmandungeons.deadmanplugin;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,10 +26,10 @@ import org.deadmandungeons.deadmanplugin.command.SubCommandInfo;
  */
 public class Messenger {
 	
-	//The Regex to find any variables in the language file
+	// The Regex to find any variables in the language file
 	private static final String VARIABLE_REGEX = "<[^>]+>";
 	private static final Pattern VARIABLE_PATTERN = Pattern.compile(VARIABLE_REGEX);
-	//The Regex to find any formatting codes in a message
+	// The Regex to find any formatting codes in a message
 	private static final String FORMATTING_REGEX = "&[\\da-fk-or]";
 	private static final Pattern FORMAT_PATTERN = Pattern.compile(FORMATTING_REGEX);
 	
@@ -73,7 +74,7 @@ public class Messenger {
 		String message = getMessage(path, colorCode);
 		if (message != null && message.length() != 0) {
 			Matcher matcher = VARIABLE_PATTERN.matcher(message);
-			for (int i=0; i<vars.length && matcher.find(); i++) {
+			for (int i = 0; i < vars.length && matcher.find(); i++) {
 				message = message.replace(matcher.group(), vars[i].toString());
 			}
 		}
@@ -93,24 +94,24 @@ public class Messenger {
 			}
 		}
 	}
-
+	
 	/**
 	 * @param cmd - The Command to send as its usage, and description
 	 * @param sender - The Command Sender to send the command info to
 	 */
 	public void sendCommandInfo(Command cmd, CommandSender sender) {
-        CommandInfo info = cmd.getClass().getAnnotation(CommandInfo.class);
-    	sender.sendMessage(ChatColor.BOLD + "" + getPrimaryColor() + info.name() + " Command");
-    	SubCommandInfo[] commands = info.subCommands();
-    	if (commands.length == 0) {
-    		sender.sendMessage(getSecondaryColor() + "  /" + getMainCmd() + " " + info.name());
-    	}
-    	if (info.description() != null && !info.description().trim().isEmpty()) {
+		CommandInfo info = cmd.getClass().getAnnotation(CommandInfo.class);
+		sender.sendMessage(ChatColor.BOLD + "" + getPrimaryColor() + info.name() + " Command");
+		SubCommandInfo[] commands = info.subCommands();
+		if (commands.length == 0) {
+			sender.sendMessage(getSecondaryColor() + "  /" + getMainCmd() + " " + info.name());
+		}
+		if (info.description() != null && !info.description().trim().isEmpty()) {
 			sender.sendMessage(getTertiaryColor() + "    - " + info.description());
 		}
 		for (SubCommandInfo cmdInfo : commands) {
 			String arguments = "";
-			for (int i=0; i<cmdInfo.arguments().length; i++) {
+			for (int i = 0; i < cmdInfo.arguments().length; i++) {
 				arguments += (i > 0 ? " " : "") + cmdInfo.arguments()[i].argName();
 			}
 			sender.sendMessage(getSecondaryColor() + "  /" + getMainCmd() + " " + info.name() + " " + arguments);
@@ -118,7 +119,7 @@ public class Messenger {
 				sender.sendMessage(getTertiaryColor() + "    - " + cmdInfo.description());
 			}
 		}
-    }
+	}
 	
 	/**
 	 * Only commands that the CommandSender has permissions for will be displayed. 5 commands
@@ -131,9 +132,9 @@ public class Messenger {
 		List<Command> cmdVals = new ArrayList<Command>();
 		for (Command cmd : commandMap.values()) {
 			CommandInfo info = cmd.getClass().getAnnotation(CommandInfo.class);
-	        if (DeadmanExecutor.hasCommandPerm(sender, info.permissions())) {
-	        	cmdVals.add(cmd);
-	        }
+			if (DeadmanExecutor.hasCommandPerm(sender, info.permissions())) {
+				cmdVals.add(cmd);
+			}
 		}
 		Command[] cmds = cmdVals.toArray(new Command[cmdVals.size()]);
 		
@@ -146,14 +147,14 @@ public class Messenger {
 		String helpTitle = getPrimaryColor() + plugin.getName() + " Commands" + paging + getTertiaryColor();
 		sender.sendMessage("");
 		sender.sendMessage(getTertiaryColor() + "<========= " + helpTitle + " =========>");
-		for (int i=0; i<cmds.length && i < (pageNum * 5); i++) {
+		for (int i = 0; i < cmds.length && i < (pageNum * 5); i++) {
 			if (i >= (pageNum - 1) * 5) {
 				sendCommandInfo(cmds[i], sender);
-				if (i+1 != cmds.length && i+1 != pageNum * 5) {
+				if (i + 1 != cmds.length && i + 1 != pageNum * 5) {
 					sender.sendMessage("");
 				}
 			}
-		}	
+		}
 		sender.sendMessage(getTertiaryColor() + "<==================================================>");
 		sender.sendMessage("");
 	}
@@ -180,7 +181,8 @@ public class Messenger {
 		if (primaryColor == null) {
 			String colorCode = getRawMessage("primary-color");
 			if (colorCode != null) {
-				primaryColor = ChatColor.getByChar(colorCode.replace("&", ""));;
+				primaryColor = ChatColor.getByChar(colorCode.replace("&", ""));
+				;
 			}
 		}
 		return primaryColor == null ? ChatColor.GOLD : primaryColor;
@@ -218,20 +220,18 @@ public class Messenger {
 	 * This method is used to format a List into a human readable String
 	 * using the primary and secondary colors defined in the plugins lang file.
 	 * The list will be formatted as: <list-val>, <list-val>, <list-val> and <list-val>
-	 * @param list - A list of objects to be formatted calling {@link java.lang.Object.toString toString}
+	 * @param list - A list of objects to be formatted calling {@link java.lang.Object#toString toString()}
 	 * @return A comma/'and' delimited String of all the values in the provided list
 	 */
-	public String formatList(List<?> list) {
+	public String formatList(Collection<?> list) {
 		String result = "";
 		if (list.size() > 0) {
 			ChatColor secondary = getSecondaryColor();
 			ChatColor primary = getPrimaryColor();
-			for (int n=0; n<list.size(); n++) {
-				if (n != 0) {
-					result += (secondary + (n == list.size() -1 ?  " and " : ", "));
-				} else {
-					result += (primary + list.get(n).toString());
-				}
+			int i = 0;
+			for (Object obj : list) {
+				String val = primary + obj.toString();
+				result += (i++ != 0 ? secondary + (i == list.size() ? " and " : ", ") + val : val);
 			}
 		} else {
 			result = ChatColor.RED + "none";
@@ -249,7 +249,6 @@ public class Messenger {
 		secondaryColor = null;
 	}
 	
-	
 	private String getRawMessage(String path) {
 		String rawMessage = null;
 		if (cachedMessages.containsKey(path)) {
@@ -264,7 +263,7 @@ public class Messenger {
 		return rawMessage;
 	}
 	
-	//using the raw section symbol in the message does not seem to work on some spigot builds, so inject the ChatColor
+	// using the raw section symbol in the message does not seem to work on some spigot builds, so inject the ChatColor
 	private String injectColors(String message) {
 		StringBuffer sb = new StringBuffer();
 		if (message != null) {
@@ -272,7 +271,7 @@ public class Messenger {
 			while (matcher.find()) {
 				matcher.appendReplacement(sb, ChatColor.getByChar(matcher.group().replace("&", "")).toString());
 			}
-			matcher.appendTail(sb);  
+			matcher.appendTail(sb);
 		}
 		return sb.toString();
 	}
@@ -292,5 +291,5 @@ public class Messenger {
 		}
 		return mainCmd;
 	}
-
+	
 }

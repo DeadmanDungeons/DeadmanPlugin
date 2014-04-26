@@ -10,17 +10,16 @@ import org.bukkit.configuration.InvalidConfigurationException;
  * @author Jon
  */
 public interface ConfigObject {
-
 	
 	/**
-	 * This method is used to get the String path to this objects {@link org.bukkit.configuration.ConfigurationSection ConfigurationSection}
-	 * @return the path to this objects ConfigurationSection
+	 * This method is used to get the {@link org.bukkit.configuration.ConfigurationSection ConfigurationSection} that this object represents
+	 * @return the ConfigurationSection that this object represents
 	 */
-	public String getPath();
+	public ConfigurationSection getConfSection();
 	
 	/**
-	 * Delete all the references to this instance as well as any other objects that may linked,
-	 * and update all of this objects properties in the plugin's data YAML file by calling {@link update}
+	 * Delete this objects {@link org.bukkit.configuration.ConfigurationSection ConfigurationSection} in the
+	 * plugin's data YAML file, and all the references to this instance as well as any other objects that may linked.
 	 */
 	public void delete();
 	
@@ -30,20 +29,10 @@ public interface ConfigObject {
 	public void updateConfig();
 	
 	/**
-	 * This method should be called to load any DeadmanSigns that represent this object and to store
-	 * the signs location data in its respective SignEventListener sign Map
-	 * @param data - The ConfigurationSection containing the DeadmanSign data for this object type
-	 * @throws InvalidConfigurationException when the provided data is invalid for this type
+	 * This method should be called by the implementing class's constructor, and is meant to load the
+	 * properties from the {@link org.bukkit.configuration.ConfigurationSection ConfigurationSection} that this object represents.
+	 * @throws InvalidConfigurationException when the ConfigurationSection data is invalid for this object
 	 */
-	public void loadSigns(ConfigurationSection data) throws InvalidConfigurationException;
-	
-	/**
-	 * This method will be called by the super constructor, and is meant to load the properties from the config
-	 * to the objects properties. Throw InvalidConfigurationException when the provided data is invalid
-	 * @param data - The ConfigurationSection containing the data for this object
-	 * @throws InvalidConfigurationException when the provided data is invalid for this type
-	 */
-	public void load(ConfigurationSection data) throws InvalidConfigurationException;
-	
+	public void load() throws InvalidConfigurationException;
 	
 }

@@ -14,7 +14,7 @@ import com.sk89q.worldedit.bukkit.WorldEditPlugin;
 import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
 
 public abstract class DeadmanPlugin extends JavaPlugin {
-
+	
 	public static final String LANG_DIRECTORY = "lang" + File.separator;
 	public static final String DATA_DIRECTORY = "data" + File.separator;
 	
@@ -25,14 +25,13 @@ public abstract class DeadmanPlugin extends JavaPlugin {
 	
 	private boolean loaded;
 	
-	
 	@Override
 	public final void onLoad() {
 		loaded = true;
 		onPluginLoad();
 	}
 	
-	public void onPluginLoad(){}
+	public void onPluginLoad() {}
 	
 	@Override
 	public abstract void onEnable();
@@ -63,12 +62,12 @@ public abstract class DeadmanPlugin extends JavaPlugin {
 			getLogger().log(Level.SEVERE, "Vault is not enabled on this server and is a required dependendy!");
 			return false;
 		}
-        RegisteredServiceProvider<Permission> permissionProvider = getServer().getServicesManager().getRegistration(Permission.class);
-        if (permissionProvider != null) {
-        	permissions = permissionProvider.getProvider();
-        }
-        return (permissions != null);
-    }
+		RegisteredServiceProvider<Permission> permissionProvider = getServer().getServicesManager().getRegistration(Permission.class);
+		if (permissionProvider != null) {
+			permissions = permissionProvider.getProvider();
+		}
+		return (permissions != null);
+	}
 	
 	public final boolean setupWorldGuard() {
 		Plugin plugin = getServer().getPluginManager().getPlugin("WorldGuard");

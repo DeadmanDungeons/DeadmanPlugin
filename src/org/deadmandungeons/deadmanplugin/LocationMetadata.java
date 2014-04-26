@@ -15,8 +15,8 @@ import org.bukkit.metadata.MetadataValue;
 public class LocationMetadata extends Location {
 	
 	private Map<Keys, MetadataValue> metaData;
-
-	public LocationMetadata(World world, double x, double y, double z) { 
+	
+	public LocationMetadata(World world, double x, double y, double z) {
 		super(world, x, y, z);
 		this.metaData = new HashMap<Keys, MetadataValue>();
 	}
@@ -25,7 +25,7 @@ public class LocationMetadata extends Location {
 		super(world, x, y, z, yaw, pitch);
 		this.metaData = new HashMap<Keys, MetadataValue>();
 	}
-
+	
 	public LocationMetadata(Location loc) {
 		super(loc.getWorld(), loc.getX(), loc.getY(), loc.getZ(), loc.getYaw(), loc.getPitch());
 		this.metaData = new HashMap<Keys, MetadataValue>();
@@ -35,9 +35,9 @@ public class LocationMetadata extends Location {
 		super(loc.getWorld(), loc.getX(), loc.getY(), loc.getZ(), loc.getYaw(), loc.getPitch());
 		this.metaData = metaData;
 	}
-
+	
 	public Map<Keys, MetadataValue> getMetaData() {
 		return metaData;
 	}
-
+	
 }

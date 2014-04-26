@@ -1,5 +1,9 @@
 package org.deadmandungeons.deadmanplugin;
 
+/**
+ * This enum contains the keys for key/value pairs used to store data for {@link ConfigObject}
+ * @author Jon
+ */
 public enum Keys {
 	
 	WORLD("World:"),
@@ -21,7 +25,9 @@ public enum Keys {
 	EXPIRATION("Exp:"),
 	PASSED("Psd:"),
 	ENDS("Ends:"),
-	PRICE("Price:");
+	PRICE("Price:"),
+	TEXT("Text:"),
+	COLOR("Color:");
 	
 	private String value;
 	
@@ -31,7 +37,7 @@ public enum Keys {
 	
 	@Override
 	public String toString() {
-        return value;
-    }
-		
+		return value;
+	}
+	
 }

@@ -4,11 +4,12 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 @Retention(RetentionPolicy.RUNTIME)
-public @interface SubCommandInfo {
-
+public @interface SubCommandInfo
+{
+	
 	/**
-     * The arguments for each sub-command, and how that command should be executed, and validated
-     */
+	 * The arguments for each sub-command, and how that command should be executed, and validated
+	 */
 	public ArgumentInfo[] arguments();
 	
 	/**
@@ -17,7 +18,7 @@ public @interface SubCommandInfo {
 	public String description();
 	
 	/**
-	 * An array of permission nodes to check before executing the command. 
+	 * An array of permission nodes to check before executing the command.
 	 * Only one permission node is needed to execute.
 	 * Further permission checks may be made in the command execute method
 	 */

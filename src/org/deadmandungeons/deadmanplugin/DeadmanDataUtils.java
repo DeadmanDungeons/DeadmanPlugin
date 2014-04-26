@@ -12,8 +12,9 @@ import org.bukkit.World;
 /**
  * <b>A utility class to get variables from a formatted string used for YAML data storage.</b> <br />
  * Variables that are stored as config data <b>entries</b> are in the following format:<br />
- * <code>&lt;key&gt;: &lt;value&gt;, &lt;key&gt;: &lt;value&gt;, &lt;key&gt;: &lt;value&gt;</code><br />
- * Example: <code>World:empire, X:140, Y:98, Z:354, ID:135, Data:2</code><br /><br />
+ * <code>&lt;key&gt;:&lt;value&gt;, &lt;key&gt;:&lt;value&gt;, &lt;key&gt;:&lt;value&gt;</code><br />
+ * Example: <code>World:empire, X:140, Y:98, Z:354, ID:135, Data:2</code><br />
+ * <br />
  * Variables that are stored as config data <b>keys</b> are in the following format:<br />
  * <code>X&lt;x-coord&gt;Y&lt;y-coord&gt;Z&lt;z-coord&gt;W&lt;world&gt;</code><br />
  * Example: X351Y154Z1478Wempire
@@ -27,17 +28,16 @@ public class DeadmanDataUtils {
 	 * @throws AssertionError
 	 */
 	public DeadmanDataUtils() throws AssertionError {
-		throw new AssertionError("Do not instantiate this class. Public constructor " 
-				+ "must be provided to be extended from each plugin");
+		throw new AssertionError("Do not instantiate this class. Public constructor " + "must be provided to be extended from each plugin");
 	}
 	
 	/**
 	 * This is used to convert the given String entry into a Location object.<br />
 	 * The given String must contain a minimum of the following Keys:<br />
-	 * {@link Keys.WORLD}, {@link Keys.XCOORD}, {@link Keys.YCOORD}, {@link Keys.ZCOORD}
-	 * @param entry - The String entry containing all of the necessary Location Keys and value pairs
+	 * {@link Keys#WORLD}, {@link Keys#XCOORD}, {@link Keys#YCOORD}, {@link Keys#ZCOORD}
+	 * @param entry - The String entry containing all of the necessary Location Key and value pairs
 	 * @return The Location that the given String described. null will be returned if the entry String
-	 * was not formatted properly, or there was a missing key and value pair 
+	 * was not formatted properly, or there was a missing key and value pair
 	 */
 	public static Location getLocationFromEntry(String entry) {
 		if (entry == null || entry.isEmpty()) {
@@ -57,7 +57,6 @@ public class DeadmanDataUtils {
 		}
 		return null;
 	}
-	
 	
 	/**
 	 * This is used to convert the given String config key into a Location object<br />
@@ -89,7 +88,30 @@ public class DeadmanDataUtils {
 		}
 		return null;
 	}
-
+	
+	/**
+	 * This is used to convert the given String config entry into a Timer object<br />
+	 * The given String must contain the key/value pairs for the following keys:<br />
+	 * {@link Keys#DURATION}, {@link Keys#EXPIRATION}, {@link Keys#PASSED}
+	 * @param entry - The String entry containing all of the necessary Timer Key and value pairs
+	 * @param global - The boolean flag stating weather or not the timer is global (true) or local (false)
+	 * @return The Timer that the given String described. null will be returned if the entry String
+	 * was not formatted properly, or there was a missing key and value pair
+	 */
+	public static Timer getTimerFromEntry(String entry, boolean global) {
+		if (entry == null || entry.isEmpty()) {
+			return null;
+		}
+		Long duration = getLong(entry, Keys.DURATION);
+		Long expired = getLong(entry, Keys.EXPIRATION);
+		Long passed = getLong(entry, Keys.PASSED);
+		
+		if (duration != null && duration > 0 && expired != null && expired > 0 && passed != null && passed > 0) {
+			return new Timer(duration.longValue(), passed.longValue(), expired.longValue(), global);
+		}
+		return null;
+	}
+	
 	/**
 	 * @param loc - The Location object that the returned String should represent
 	 * @param withDirection - a flag to specify if Yaw and Pitch should be included in the returned String
@@ -98,12 +120,11 @@ public class DeadmanDataUtils {
 	public static String formatLocation(Location loc, boolean withDirection) {
 		String formatted = "";
 		if (!withDirection) {
-			formatted = Keys.WORLD + loc.getWorld().getName() + ", " + Keys.XCOORD + loc.getBlockX() 
-					+ ", " + Keys.YCOORD + loc.getBlockY() + ", " + Keys.ZCOORD + loc.getBlockZ();
+			formatted = Keys.WORLD + loc.getWorld().getName() + ", " + Keys.XCOORD + loc.getBlockX() + ", " + Keys.YCOORD + loc.getBlockY() + ", "
+					+ Keys.ZCOORD + loc.getBlockZ();
 		} else {
-			formatted = Keys.WORLD + loc.getWorld().getName() + ", " + Keys.XCOORD + loc.getX() 
-					+ ", " + Keys.YCOORD + loc.getY() + ", " + Keys.ZCOORD + loc.getZ() 
-					+ ", " + Keys.YAW + loc.getYaw() + ", " + Keys.PITCH + loc.getPitch();
+			formatted = Keys.WORLD + loc.getWorld().getName() + ", " + Keys.XCOORD + loc.getX() + ", " + Keys.YCOORD + loc.getY() + ", "
+					+ Keys.ZCOORD + loc.getZ() + ", " + Keys.YAW + loc.getYaw() + ", " + Keys.PITCH + loc.getPitch();
 		}
 		
 		return formatted;
@@ -116,7 +137,15 @@ public class DeadmanDataUtils {
 	public static String formatLocationKey(Location loc) {
 		return "X" + loc.getBlockX() + "Y" + loc.getBlockY() + "Z" + loc.getBlockZ() + "W" + loc.getWorld().getName();
 	}
-
+	
+	/**
+	 * @param timer - The TImer that the returned String should represent
+	 * @return A String representation of the given Timer in the format used for config data entries
+	 */
+	public static String formatTimer(Timer timer) {
+		return Keys.DURATION.toString() + timer.getDuration() + ", " + Keys.EXPIRATION + timer.getExpire() + ", " + Keys.PASSED + timer.getElapsed();
+	}
+	
 	/**
 	 * A convenience method to format a List of Locations in the format used in config data entries
 	 * @param locationList - The List of Locations that should be represented in the returned list of Strings
@@ -170,7 +199,6 @@ public class DeadmanDataUtils {
 		return locationList;
 	}
 	
-
 	/**
 	 * @param entry - The String entry containing the desired Long variable
 	 * @param key - The Key of the desired Long variable
@@ -178,7 +206,7 @@ public class DeadmanDataUtils {
 	 */
 	public static Long getLong(String entry, Keys key) {
 		String regex = key + "-?\\d+";
-		Pattern patern = Pattern.compile(regex); 
+		Pattern patern = Pattern.compile(regex);
 		Matcher matcher = patern.matcher(entry);
 		if (matcher.find()) {
 			return Long.parseLong(matcher.group().replace(key.toString(), ""));
@@ -194,7 +222,7 @@ public class DeadmanDataUtils {
 	public static Integer getInt(String entry, Keys key) {
 		Long longResult = getLong(entry, key);
 		if (longResult != null && longResult > Integer.MIN_VALUE && longResult < Integer.MAX_VALUE) {
-			return (int)longResult.longValue();
+			return (int) longResult.longValue();
 		}
 		return null;
 	}
@@ -206,7 +234,7 @@ public class DeadmanDataUtils {
 	 */
 	public static Double getDouble(String entry, Keys key) {
 		String regex = key + "-?\\d+(\\.\\d+)?";
-		Pattern patern = Pattern.compile(regex); 
+		Pattern patern = Pattern.compile(regex);
 		Matcher matcher = patern.matcher(entry);
 		if (matcher.find()) {
 			return Double.parseDouble(matcher.group().replace(key.toString(), ""));
@@ -234,7 +262,7 @@ public class DeadmanDataUtils {
 	 */
 	public static String getString(String entry, Keys key) {
 		String regex = key + "([^,])+";
-		Pattern patern = Pattern.compile(regex); 
+		Pattern patern = Pattern.compile(regex);
 		Matcher matcher = patern.matcher(entry);
 		if (matcher.find()) {
 			return matcher.group().replace(key.toString(), "");
