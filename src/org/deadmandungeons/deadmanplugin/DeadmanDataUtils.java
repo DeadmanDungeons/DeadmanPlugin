@@ -261,13 +261,23 @@ public class DeadmanDataUtils {
 	 * @return The raw String defined at the given key, or null if a value did not exist at the given Key
 	 */
 	public static String getString(String entry, Keys key) {
+		return getString(entry, key, null);
+	}
+	
+	/**
+	 * @param entry - The String entry containing the desired variable
+	 * @param key - The Key of the desired variable
+	 * @param def - The default value to be returned if a value was not found for the given Key
+	 * @return The raw String defined at the given key, or null if a value did not exist at the given Key
+	 */
+	public static String getString(String entry, Keys key, String def) {
 		String regex = key + "([^,])+";
 		Pattern patern = Pattern.compile(regex);
 		Matcher matcher = patern.matcher(entry);
 		if (matcher.find()) {
 			return matcher.group().replace(key.toString(), "");
 		}
-		return null;
+		return def;
 	}
 	
 }

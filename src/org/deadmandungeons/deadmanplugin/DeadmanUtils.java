@@ -21,13 +21,10 @@ import org.bukkit.util.BlockIterator;
  */
 public class DeadmanUtils {
 	
-	/**
-	 * Do not instantiate this class. Public constructor must be provided to be extended from each plugin
-	 * @throws AssertionError
-	 */
-	public DeadmanUtils() throws AssertionError {
-		throw new AssertionError("Do not instantiate this class. Public constructor " + "must be provided to be extended from each plugin");
-	}
+	private static final String DURATION_REGEX = "^\\d+[dD](:\\d+[hH](:\\d+[mM])?)?$|^\\d+[dD]:\\d+[mM]$|^\\d+[hH](:\\d+[mM])?$|^\\d+[mM]$";
+	private static final Pattern DURATION_PATTERN = Pattern.compile(DURATION_REGEX);
+	
+	// no private constructor to allow this util class to be extended
 	
 	/**
 	 * @param millis - The amount of time in milliseconds
@@ -74,35 +71,33 @@ public class DeadmanUtils {
 	 * @return the duration of time in milliseconds from the sign formatted duration String
 	 */
 	public static long getDuration(String duration) {
-		if (duration != null) {
-			if (duration.matches("^\\d+[dD](:\\d+[hH](:\\d+[mM])?)?$|^\\d+[dD]:\\d+[mM]$|^\\d+[hH](:\\d+[mM])?$|^\\d+[mM]$")) {
-				int days = 0;
-				int hours = 0;
-				int minutes = 0;
-				
-				Pattern pattern;
-				Matcher matcher;
-				String daysRegex = "\\d+[dD]";
-				pattern = Pattern.compile(daysRegex);
-				matcher = pattern.matcher(duration);
-				if (matcher.find()) {
-					days = Integer.parseInt(matcher.group().replaceAll("[^\\d]", ""));
-				}
-				String hoursRegex = "\\d+[hH]";
-				pattern = Pattern.compile(hoursRegex);
-				matcher = pattern.matcher(duration);
-				if (matcher.find()) {
-					hours = Integer.parseInt(matcher.group().replaceAll("[^\\d]", ""));
-				}
-				String minutesRegex = "\\d+[mM]";
-				pattern = Pattern.compile(minutesRegex);
-				matcher = pattern.matcher(duration);
-				if (matcher.find()) {
-					minutes = Integer.parseInt(matcher.group().replaceAll("[^\\d]", ""));
-				}
-				
-				return (days * 86400000L) + (hours * 3600000) + (minutes * 60000);
+		if (duration != null && DURATION_PATTERN.matcher(duration).matches()) {
+			int days = 0;
+			int hours = 0;
+			int minutes = 0;
+			
+			Pattern pattern;
+			Matcher matcher;
+			String daysRegex = "\\d+[dD]";
+			pattern = Pattern.compile(daysRegex);
+			matcher = pattern.matcher(duration);
+			if (matcher.find()) {
+				days = Integer.parseInt(matcher.group().replaceAll("[^\\d]", ""));
 			}
+			String hoursRegex = "\\d+[hH]";
+			pattern = Pattern.compile(hoursRegex);
+			matcher = pattern.matcher(duration);
+			if (matcher.find()) {
+				hours = Integer.parseInt(matcher.group().replaceAll("[^\\d]", ""));
+			}
+			String minutesRegex = "\\d+[mM]";
+			pattern = Pattern.compile(minutesRegex);
+			matcher = pattern.matcher(duration);
+			if (matcher.find()) {
+				minutes = Integer.parseInt(matcher.group().replaceAll("[^\\d]", ""));
+			}
+			
+			return (days * 86400000L) + (hours * 3600000) + (minutes * 60000);
 		}
 		return 0;
 	}
@@ -202,7 +197,7 @@ public class DeadmanUtils {
 			sign.setLine(1, "");
 			sign.setLine(2, "");
 			sign.setLine(3, "");
-			sign.update();
+			sign.update(true);
 		}
 	}
 	

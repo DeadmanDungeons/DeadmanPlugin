@@ -1,26 +1,40 @@
 package org.deadmandungeons.deadmanplugin.command;
 
+import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
+/**
+ * This annotation is used to define the properties of an argument for a {@link SubCommandInfo} such as
+ * the arguments name, {@link ArgType} (for argument matching), and varType class (for argument conversion and validation)
+ * @author Jon
+ */
 @Retention(RetentionPolicy.RUNTIME)
-public @interface ArgumentInfo
-{
+@Target(value = { ElementType.TYPE })
+public @interface ArgumentInfo {
 	
 	/**
-	 * The name of the argument in format:
-	 * <ul>
-	 * <li>'&lt;name&gt;' if it is a required variable</li>
-	 * <li>'[name]' if it is an optional variable</li>
-	 * <li>'name' if it is a required non-vriable</li>
-	 * </ul>
-	 * Used to display the commands usage
+	 * The name of the argument. Used to display the commands usage
 	 */
 	public String argName();
 	
 	/**
-	 * The class of the argument. Used for argument conversion, and command validation
+	 * The type of argument of the argument. Used for argument conversion, and command validation
 	 */
-	public Class<?> argType();
+	public ArgType argType();
+	
+	/**
+	 * The class of the argument. Used for argument conversion, and command validation. <br />
+	 * default = String.class
+	 */
+	public Class<?> varType() default String.class;
+	
+	public static enum ArgType {
+		
+		VARIABLE,
+		OPT_VARIABLE,
+		NON_VARIABLE;
+	}
 	
 }

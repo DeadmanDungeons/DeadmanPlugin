@@ -1,9 +1,9 @@
 package org.deadmandungeons.deadmanplugin.command;
 
-import org.bukkit.command.CommandSender;
+import org.deadmandungeons.deadmanplugin.Result;
 
-public interface ArgumentConverter {
+public interface ArgumentConverter<T> {
 	
-	public Object convertCommandArg(CommandSender sender, String argName, String arg);
+	public Result<T> convertCommandArg(String argName, String arg);
 	
 }

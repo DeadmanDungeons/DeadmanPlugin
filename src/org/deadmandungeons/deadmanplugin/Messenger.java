@@ -12,12 +12,11 @@ import java.util.regex.Pattern;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.PluginDescriptionFile;
-import org.deadmandungeons.deadmanplugin.command.Command;
 import org.deadmandungeons.deadmanplugin.command.CommandInfo;
 import org.deadmandungeons.deadmanplugin.command.DeadmanExecutor;
+import org.deadmandungeons.deadmanplugin.command.DeadmanExecutor.CommandWrapper;
 import org.deadmandungeons.deadmanplugin.command.SubCommandInfo;
 
-//TODO inject colors before variables to remove the need to specify colors in lang file
 //TODO maybe make the implementing Plugin specify the main command
 /**
  * A Messaging utility class that makes messaging Players with configured messages easy.
@@ -90,18 +89,27 @@ public class Messenger {
 		if (sender != null) {
 			String message = getMessage(path, true, vars);
 			if (message != null && message.length() != 0) {
-				sender.sendMessage(message);
+				for (String line : message.split("\\\\n")) {
+					sender.sendMessage(line);
+				}
 			}
 		}
 	}
 	
 	/**
-	 * @param cmd - The Command to send as its usage, and description
+	 * @param info - The CommandInfo that should be sent as the Command name, usage, and description
 	 * @param sender - The Command Sender to send the command info to
 	 */
-	public void sendCommandInfo(Command cmd, CommandSender sender) {
-		CommandInfo info = cmd.getClass().getAnnotation(CommandInfo.class);
+	public void sendCommandInfo(CommandInfo info, CommandSender sender) {
 		sender.sendMessage(ChatColor.BOLD + "" + getPrimaryColor() + info.name() + " Command");
+		sendCommandUsage(info, sender);
+	}
+	
+	/**
+	 * @param info - The CommandInfo that should be sent as the Command usage and description
+	 * @param sender - The Command Sender to send the command info to
+	 */
+	public void sendCommandUsage(CommandInfo info, CommandSender sender) {
 		SubCommandInfo[] commands = info.subCommands();
 		if (commands.length == 0) {
 			sender.sendMessage(getSecondaryColor() + "  /" + getMainCmd() + " " + info.name());
@@ -128,29 +136,29 @@ public class Messenger {
 	 * @param commandMap - A Map containing all of the registered commands to be sent to the CommandSender
 	 * @param pageNum - The number of the page to send. Each page lists 5 commands
 	 */
-	public void sendHelpInfo(CommandSender sender, Map<String, Command> commandMap, int pageNum) {
-		List<Command> cmdVals = new ArrayList<Command>();
-		for (Command cmd : commandMap.values()) {
-			CommandInfo info = cmd.getClass().getAnnotation(CommandInfo.class);
-			if (DeadmanExecutor.hasCommandPerm(sender, info.permissions())) {
-				cmdVals.add(cmd);
+	public void sendHelpInfo(CommandSender sender, Map<Class<?>, CommandWrapper<?>> commandMap, int pageNum) {
+		List<CommandInfo> cmdInfos = new ArrayList<CommandInfo>();
+		for (CommandWrapper<?> cmdWrapper : commandMap.values()) {
+			if (DeadmanExecutor.hasCommandPerm(sender, cmdWrapper.getInfo().permissions())) {
+				cmdInfos.add(cmdWrapper.getInfo());
 			}
 		}
-		Command[] cmds = cmdVals.toArray(new Command[cmdVals.size()]);
+		CommandInfo[] infos = cmdInfos.toArray(new CommandInfo[cmdInfos.size()]);
 		
-		int maxPage = cmds.length / 5 + (cmds.length % 5 > 0 ? 1 : 0);
-		if (pageNum * 5 > cmds.length + 4) {
+		int maxPage = infos.length / 5 + (infos.length % 5 > 0 ? 1 : 0);
+		if (pageNum * 5 > infos.length + 4) {
 			pageNum = maxPage;
 		}
 		
-		String paging = (cmds.length > 5 ? " [pg. " + pageNum + "/" + maxPage + "]" : "");
+		String paging = (infos.length > 5 ? " [pg. " + pageNum + "/" + maxPage + "]" : "");
 		String helpTitle = getPrimaryColor() + plugin.getName() + " Commands" + paging + getTertiaryColor();
 		sender.sendMessage("");
 		sender.sendMessage(getTertiaryColor() + "<========= " + helpTitle + " =========>");
-		for (int i = 0; i < cmds.length && i < (pageNum * 5); i++) {
+		sender.sendMessage(getSecondaryColor() + "KEY: " + getTertiaryColor() + "'non-variable' '<variable>' '[optional-variable]'");
+		for (int i = 0; i < infos.length && i < (pageNum * 5); i++) {
 			if (i >= (pageNum - 1) * 5) {
-				sendCommandInfo(cmds[i], sender);
-				if (i + 1 != cmds.length && i + 1 != pageNum * 5) {
+				sendCommandInfo(infos[i], sender);
+				if (i + 1 != infos.length && i + 1 != pageNum * 5) {
 					sender.sendMessage("");
 				}
 			}
@@ -247,6 +255,7 @@ public class Messenger {
 		cachedMessages.clear();
 		primaryColor = null;
 		secondaryColor = null;
+		tertiaryColor = null;
 	}
 	
 	private String getRawMessage(String path) {
