@@ -18,9 +18,10 @@ import java.lang.annotation.Target;
 public @interface SubCommandInfo {
 	
 	/**
-	 * The arguments for each sub-command, and how that command should be executed, and validated
+	 * The arguments for each sub-command, and how that command should be executed, and validated.
+	 * If this is empty or not given, The subCommand will match when no arguments are given.
 	 */
-	public ArgumentInfo[] arguments();
+	public ArgumentInfo[] arguments() default {};
 	
 	/**
 	 * The description of this sub-command

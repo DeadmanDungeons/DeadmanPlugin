@@ -189,8 +189,8 @@ public final class Arguments {
 			int index = -1;
 			// determine which command syntax the sender was using by matching the general syntax
 			for (int i = 0; i < subCommands.length; i++) {
-				ArgumentInfo[] arguments = subCommands[i].arguments();
 				boolean matchedCmd = true;
+				ArgumentInfo[] arguments = subCommands[i].arguments();
 				// if the amounts of arguments equal, or if there is only only 1 argument missing (for optional args)
 				if (args.length == arguments.length || args.length + 1 == arguments.length) {
 					for (int n = 0; n < arguments.length; n++) {
@@ -315,12 +315,9 @@ public final class Arguments {
 								String msg = "The ArgumentConverter for variables of type '%s' returned a Result containing neither an errorMessage or result object.";
 								throw new IllegalStateException(String.format(msg, toArgs[i].varType().getCanonicalName()));
 							}
-							if (toArgs[i].varType() != conversionResult.getResult().getClass()) {
-								String msg = "The ArgumentConverter for variables of type '%s' returned a Result of type '%s'";
-								throw new IllegalStateException(String.format(msg, toArgs[i].varType().getCanonicalName(), conversionResult
-										.getResult().getClass().getCanonicalName()));
-							}
 							args.add(conversionResult.getResult());
+						} else if (toArgs[i].varType() == String.class) {
+							args.add(subCmd.strArgs[i]);
 						} else {
 							String msg = "An ArgumentConverter was not found for arguments of type '%s'";
 							throw new IllegalStateException(String.format(msg, toArgs[i].varType().getCanonicalName()));

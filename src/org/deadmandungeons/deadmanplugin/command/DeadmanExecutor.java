@@ -2,6 +2,7 @@ package org.deadmandungeons.deadmanplugin.command;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.logging.Level;
 
@@ -30,7 +31,7 @@ public abstract class DeadmanExecutor implements CommandExecutor {
 	private static final String NOT_DURATION = "The time duration match the format of #m:#h:#d and cannot be equal to zero minutes";
 	private static final String NOT_BOOLEAN = "'%s' is not a boolean. Argument must be either 'true' or 'false'";
 	
-	private Map<Class<?>, CommandWrapper<?>> commands = new HashMap<Class<?>, CommandWrapper<?>>();
+	private Map<Class<?>, CommandWrapper<?>> commands = new LinkedHashMap<Class<?>, CommandWrapper<?>>();
 	private Map<String, PseudoCommand> pseudoCommands = new HashMap<String, PseudoCommand>();
 	private Map<String, String> helpInfo = new HashMap<String, String>();
 	
@@ -40,7 +41,6 @@ public abstract class DeadmanExecutor implements CommandExecutor {
 	
 	public DeadmanExecutor(DeadmanPlugin plugin) {
 		this.plugin = plugin;
-		registerCommands();
 		
 		/*
 		 * Default argument type converters.
@@ -85,7 +85,7 @@ public abstract class DeadmanExecutor implements CommandExecutor {
 	}
 	
 	@Override
-	public boolean onCommand(CommandSender sender, org.bukkit.command.Command bukkitCommand, String label, String[] args) {
+	public final boolean onCommand(CommandSender sender, org.bukkit.command.Command bukkitCommand, String label, String[] args) {
 		if (args.length == 0) {
 			plugin.getMessenger().sendPluginInfo(sender);
 			return true;
@@ -174,23 +174,46 @@ public abstract class DeadmanExecutor implements CommandExecutor {
 	}
 	
 	/**
-	 * Register the given command
+	 * Register the given command. <br>
+	 * This method will construct a new instance of the given Command class by calling <br>
+	 * {@link java.lang.Class#newInstance() Class#newInstance()}. Thus the Command class
+	 * must have a no-arg constructor. If there is not a public no-arg constructor, then register
+	 * the Command using {@link #registerCommand(Command)}.
 	 * @param command - The class of the command that should be registered
 	 */
-	protected <T extends Command> void registerCommand(Class<T> command) {
-		Validate.notNull(command);
-		CommandInfo info = command.getAnnotation(CommandInfo.class);
-		if (info != null && info.name() != null && info.pattern() != null) {
+	protected final <T extends Command> void registerCommand(Class<T> commandClass) {
+		Validate.notNull(commandClass);
+		CommandInfo info = getCommandInfo(commandClass);
+		if (info != null) {
 			try {
-				commands.put(command, new CommandWrapper<T>(info, command.newInstance()));
+				commands.put(commandClass, new CommandWrapper<T>(info, commandClass.newInstance()));
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
-		} else {
-			String msg = "The '" + command.getCanonicalName() + "' command must be annotated with the CommandInfo annotation,"
-					+ " and the name, and pattern cannot be null. This command willl not be registered";
-			plugin.getLogger().log(Level.SEVERE, msg);
 		}
+	}
+	
+	/**
+	 * Register the given command. <br>
+	 * Use this register method over {@link #registerCommand(Class)} when the Command class does not have a public no-arg constructor.
+	 * @param command - An instance of the command that should be registered
+	 */
+	protected final <T extends Command> void registerCommand(T command) {
+		Validate.notNull(command);
+		CommandInfo info = getCommandInfo(command.getClass());
+		if (info != null) {
+			commands.put(command.getClass(), new CommandWrapper<T>(info, command));
+		}
+	}
+	
+	private <T extends Command> CommandInfo getCommandInfo(Class<T> commandClass) {
+		CommandInfo info = commandClass.getAnnotation(CommandInfo.class);
+		if (info == null || info.name() == null || info.pattern() == null) {
+			String msg = "The '%s' command must be annotated with the CommandInfo annotation,"
+					+ " and the name, and pattern cannot be null. This command willl not be registered";
+			plugin.getLogger().log(Level.SEVERE, String.format(msg, commandClass.getCanonicalName()));
+		}
+		return info;
 	}
 	
 	/**
@@ -198,7 +221,7 @@ public abstract class DeadmanExecutor implements CommandExecutor {
 	 * @return an instance of the registered Command
 	 * @throws IllegalStateException if the command has not been registered.
 	 */
-	public <T extends Command> T getCommand(Class<T> command) {
+	public final <T extends Command> T getCommand(Class<T> command) {
 		return getCommandWrapper(command).getCmd();
 	}
 	
@@ -208,10 +231,10 @@ public abstract class DeadmanExecutor implements CommandExecutor {
 	 * @throws IllegalStateException if the command has not been registered.
 	 */
 	@SuppressWarnings("unchecked")
-	public <T extends Command> CommandWrapper<T> getCommandWrapper(Class<T> command) throws IllegalStateException {
+	public final <T extends Command> CommandWrapper<T> getCommandWrapper(Class<T> command) throws IllegalStateException {
 		Validate.notNull(command);
 		if (!commands.containsKey(command)) {
-			throw new IllegalStateException("A command for type '" + command.getCanonicalName() + "' has not been registered!");
+			throw new IllegalArgumentException("A command for type '" + command.getCanonicalName() + "' has not been registered!");
 		}
 		return (CommandWrapper<T>) commands.get(command);
 	}
@@ -222,7 +245,7 @@ public abstract class DeadmanExecutor implements CommandExecutor {
 	 * @return A new HashMap containing all of the registered commands, with the commands class by key,
 	 * and the {@link CommandWrapper} by value.
 	 */
-	public Map<Class<?>, CommandWrapper<?>> getCommands() {
+	public final Map<Class<?>, CommandWrapper<?>> getCommands() {
 		return new HashMap<Class<?>, CommandWrapper<?>>(commands);
 	}
 	
@@ -236,7 +259,7 @@ public abstract class DeadmanExecutor implements CommandExecutor {
 	 * regular command name.
 	 * @param pseudoCommand - The PseudoCommand object to be executed when this PseudoCommand is called
 	 */
-	protected void registerPseudoCommad(String cmdName, PseudoCommand pseudoCommand) {
+	protected final void registerPseudoCommad(String cmdName, PseudoCommand pseudoCommand) {
 		Validate.notNull(cmdName);
 		Validate.notNull(pseudoCommand);
 		
@@ -259,14 +282,14 @@ public abstract class DeadmanExecutor implements CommandExecutor {
 	 * {@link #registerPseudoCommad(String cmdName, Command command)} method to properly register a PseudoCommand.
 	 * @return A copied HashMap containing all of the commands pattern by key, and the registered commands by value.
 	 */
-	public Map<String, PseudoCommand> getPseudoCommands() {
+	public final Map<String, PseudoCommand> getPseudoCommands() {
 		return new HashMap<String, PseudoCommand>(pseudoCommands);
 	}
 	
 	/**
 	 * @param converter - The ArgumentConverter to register
 	 */
-	public void registerConverter(Class<?> type, ArgumentConverter<?> converter) {
+	public final <T> void registerConverter(Class<? super T> type, ArgumentConverter<T> converter) {
 		Validate.notNull(type);
 		Validate.notNull(converter);
 		
@@ -278,8 +301,9 @@ public abstract class DeadmanExecutor implements CommandExecutor {
 	 * @return the registered {@link ArgumentConverter} for the given type
 	 * or null if an ArgumentConverter was not registered for the given type.
 	 */
-	public ArgumentConverter<?> getConverter(Class<?> type) {
-		return converters.get(type);
+	@SuppressWarnings("unchecked")
+	public final <T> ArgumentConverter<T> getConverter(Class<T> type) {
+		return (ArgumentConverter<T>) converters.get(type);
 	}
 	
 	/**
@@ -291,7 +315,7 @@ public abstract class DeadmanExecutor implements CommandExecutor {
 	 * @param helpArg - The help info argument
 	 * @param messagePath - The path the the help info message in the plugins lang file
 	 */
-	public void registerHelpInfo(String helpArg, String messagePath) {
+	public final void registerHelpInfo(String helpArg, String messagePath) {
 		Validate.notNull(helpArg);
 		Validate.notNull(messagePath);
 		String arg = helpArg.trim().toLowerCase();
@@ -342,12 +366,5 @@ public abstract class DeadmanExecutor implements CommandExecutor {
 			return cmd;
 		}
 	}
-	
-	/**
-	 * call {@link #register(Class command)} for each command that should be registered,
-	 * and {@link #registerPseudoCommad(String cmdName, Command command)} for each PseudoCommand
-	 * that should be registered. This method will be invoked when the DeadmanExecutor is constructed.
-	 */
-	protected abstract void registerCommands();
 	
 }

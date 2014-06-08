@@ -38,13 +38,9 @@ public class TimerScheduler implements Runnable {
 		}
 		timer.updateElapsed();
 		
-		System.out.println("Duration: " + timer.getDuration() + ", Elapsed: " + timer.getElapsed() + ", TimeLeft: " + timer.getTimeLeft()
-				+ ", Current: " + System.currentTimeMillis() + ", Expire: " + timer.getExpire());
-		
 		if (timer.isEnded()) {
 			setTimer(null);
 			timerExecutor.onTimerEnd();
-			System.out.println("ended");
 			return;
 		}
 		

@@ -2,8 +2,8 @@ package org.deadmandungeons.deadmanplugin;
 
 /**
  * A Timer is used to keep track of when a certain task should be executed.
- * If a Timer is set as global, the time will elapse based on server up time.<br />
- * If a Timer is set as not global, the time will elapse based on global time regardless of server up-time.<br />
+ * If a Timer is set as not global, the time will elapse based on server up time.<br />
+ * If a Timer is set as global, the time will elapse based on global time regardless of server up-time.<br />
  * @author Jon
  */
 public class Timer {

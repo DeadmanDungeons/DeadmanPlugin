@@ -10,7 +10,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.bukkit.ChatColor;
+import org.bukkit.Sound;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.deadmandungeons.deadmanplugin.command.CommandInfo;
 import org.deadmandungeons.deadmanplugin.command.DeadmanExecutor;
@@ -93,6 +95,37 @@ public class Messenger {
 					sender.sendMessage(line);
 				}
 			}
+		}
+	}
+	
+	/**
+	 * This method calls {@link #sendMessage(CommandSender, String, Object...) sendMessage()} but with a error sound played to the CommandSender if
+	 * the sender is a player
+	 */
+	public void sendErrorMessage(CommandSender sender, String path, Object... vars) {
+		sendMessage(sender, path, vars);
+		if (sender instanceof Player) {
+			Player player = (Player) sender;
+			player.playSound(player.getLocation(), Sound.NOTE_BASS_GUITAR, 1, .8F);
+		}
+	}
+	
+	/**
+	 * This method calls {@link #sendMessage(CommandSender, String, Object...) sendMessage()} but with a success sound played to the CommandSender if
+	 * the sender is a player
+	 */
+	public void sendSuccessMessage(CommandSender sender, String path, Object... vars) {
+		sendMessage(sender, path, vars);
+		if (sender instanceof Player) {
+			final Player player = (Player) sender;
+			player.playSound(player.getLocation(), Sound.ORB_PICKUP, 1, .5F);
+			plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+				
+				@Override
+				public void run() {
+					player.playSound(player.getLocation(), Sound.ORB_PICKUP, 1, .5F);
+				}
+			}, 4L);
 		}
 	}
 	

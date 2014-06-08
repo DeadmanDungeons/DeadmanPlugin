@@ -217,6 +217,25 @@ public class DeadmanUtils {
 		return null;
 	}
 	
+	public static ItemStack getItemStack(String item) {
+		if (item != null) {
+			String[] parts = item.split(":");
+			Material type = Material.matchMaterial(parts[0]);
+			if (type != null) {
+				byte data = 0;
+				if (parts.length >= 2) {
+					data = Byte.parseByte(parts[1]);
+				}
+				int amount = 1;
+				if (parts.length == 3) {
+					amount = Integer.parseInt(parts[2]);
+				}
+				return new ItemStack(type, amount, (short) 0, data);
+			}
+		}
+		return null;
+	}
+	
 	public static boolean isInteger(String number) {
 		try {
 			Integer.parseInt(number);

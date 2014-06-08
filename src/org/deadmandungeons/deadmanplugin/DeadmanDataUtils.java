@@ -1,7 +1,9 @@
 package org.deadmandungeons.deadmanplugin;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -23,13 +25,8 @@ import org.bukkit.World;
  */
 public class DeadmanDataUtils {
 	
-	/**
-	 * Do not instantiate this class. Public constructor must be provided to be extended from each plugin
-	 * @throws AssertionError
-	 */
-	public DeadmanDataUtils() throws AssertionError {
-		throw new AssertionError("Do not instantiate this class. Public constructor " + "must be provided to be extended from each plugin");
-	}
+	private static Map<String, Pattern> patternCache = new HashMap<String, Pattern>();
+	
 	
 	/**
 	 * This is used to convert the given String entry into a Location object.<br />
@@ -206,7 +203,7 @@ public class DeadmanDataUtils {
 	 */
 	public static Long getLong(String entry, Keys key) {
 		String regex = key + "-?\\d+";
-		Pattern patern = Pattern.compile(regex);
+		Pattern patern = getPattern(regex);
 		Matcher matcher = patern.matcher(entry);
 		if (matcher.find()) {
 			return Long.parseLong(matcher.group().replace(key.toString(), ""));
@@ -234,7 +231,7 @@ public class DeadmanDataUtils {
 	 */
 	public static Double getDouble(String entry, Keys key) {
 		String regex = key + "-?\\d+(\\.\\d+)?";
-		Pattern patern = Pattern.compile(regex);
+		Pattern patern = getPattern(regex);
 		Matcher matcher = patern.matcher(entry);
 		if (matcher.find()) {
 			return Double.parseDouble(matcher.group().replace(key.toString(), ""));
@@ -272,12 +269,21 @@ public class DeadmanDataUtils {
 	 */
 	public static String getString(String entry, Keys key, String def) {
 		String regex = key + "([^,])+";
-		Pattern patern = Pattern.compile(regex);
+		Pattern patern = getPattern(regex);
 		Matcher matcher = patern.matcher(entry);
 		if (matcher.find()) {
 			return matcher.group().replace(key.toString(), "");
 		}
 		return def;
+	}
+	
+	private static Pattern getPattern(String regex) {
+		Pattern pattern = patternCache.get(regex);
+		if (pattern == null) {
+			pattern = Pattern.compile(regex);
+			patternCache.put(regex, pattern);
+		}
+		return pattern;
 	}
 	
 }
