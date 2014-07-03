@@ -282,6 +282,23 @@ public class Messenger {
 	}
 	
 	/**
+	 * This will replace any substring matching &[\da-fk-or] with the appropriate ChatColor
+	 * @param message - The message string to inject colors in
+	 * @return the given message with any ChatColors injected
+	 */
+	public String injectColors(String message) {
+		StringBuffer sb = new StringBuffer();
+		if (message != null) {
+			Matcher matcher = FORMAT_PATTERN.matcher(message);
+			while (matcher.find()) {
+				matcher.appendReplacement(sb, ChatColor.getByChar(matcher.group().replace("&", "")).toString());
+			}
+			matcher.appendTail(sb);
+		}
+		return sb.toString();
+	}
+	
+	/**
 	 * Clear any cached messages forcing them to pull them from the config again
 	 */
 	public void clearCache() {
@@ -303,19 +320,6 @@ public class Messenger {
 			plugin.getLogger().log(Level.SEVERE, "Failed to retrieve message '" + path + "' from lang file!");
 		}
 		return rawMessage;
-	}
-	
-	// using the raw section symbol in the message does not seem to work on some spigot builds, so inject the ChatColor
-	private String injectColors(String message) {
-		StringBuffer sb = new StringBuffer();
-		if (message != null) {
-			Matcher matcher = FORMAT_PATTERN.matcher(message);
-			while (matcher.find()) {
-				matcher.appendReplacement(sb, ChatColor.getByChar(matcher.group().replace("&", "")).toString());
-			}
-			matcher.appendTail(sb);
-		}
-		return sb.toString();
 	}
 	
 	private String getMainCmd() {
