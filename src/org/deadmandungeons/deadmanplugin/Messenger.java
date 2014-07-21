@@ -28,7 +28,7 @@ import org.deadmandungeons.deadmanplugin.command.SubCommandInfo;
 public class Messenger {
 	
 	// The Regex to find any variables in the language file
-	private static final String VARIABLE_REGEX = "<[^>]+>";
+	private static final String VARIABLE_REGEX = "(?<!\\\\)<[^>]+>";
 	private static final Pattern VARIABLE_PATTERN = Pattern.compile(VARIABLE_REGEX);
 	// The Regex to find any formatting codes in a message
 	private static final String FORMATTING_REGEX = "&[\\da-fk-or]";
@@ -47,23 +47,6 @@ public class Messenger {
 		this.plugin = plugin;
 	}
 	
-	/**
-	 * @param path - String path name to the desired message in the plugin's language file
-	 * @param colorCode - boolean flag state weather message should returned with color injected or not
-	 * @return the configured message at the given path, with colors injected if colorCode is true
-	 */
-	public String getMessage(String path, boolean colorCode) {
-		String message = null;
-		String rawMessage = getRawMessage(path);
-		if (rawMessage != null) {
-			if (colorCode) {
-				message = injectColors(rawMessage);
-			} else {
-				message = rawMessage.replaceAll(FORMATTING_REGEX, "");
-			}
-		}
-		return message;
-	}
 	
 	/**
 	 * @param path - String path name to the desired message in the plugin's language file
@@ -72,12 +55,20 @@ public class Messenger {
 	 * @return the String message at the given path with the given variables injected along with any colors if colorCode is flagged as true
 	 */
 	public String getMessage(String path, boolean colorCode, Object... vars) {
-		String message = getMessage(path, colorCode);
-		if (message != null && message.length() != 0) {
-			Matcher matcher = VARIABLE_PATTERN.matcher(message);
-			for (int i = 0; i < vars.length && matcher.find(); i++) {
-				message = message.replace(matcher.group(), vars[i].toString());
+		String message = getRawMessage(path);
+		if (message != null && message.length() > 0) {
+			if (colorCode) {
+				message = injectColors(message);
+			} else {
+				message = message.replaceAll(FORMATTING_REGEX, "");
 			}
+			if (vars.length > 0) {
+				Matcher matcher = VARIABLE_PATTERN.matcher(message);
+				for (int i = 0; i < vars.length && matcher.find(); i++) {
+					message = message.replace(matcher.group(), vars[i].toString());
+				}
+			}
+			return message.replace("\\<", "<").replace("\\>", ">");
 		}
 		return message;
 	}
@@ -91,9 +82,7 @@ public class Messenger {
 		if (sender != null) {
 			String message = getMessage(path, true, vars);
 			if (message != null && message.length() != 0) {
-				for (String line : message.split("\\\\n")) {
-					sender.sendMessage(line);
-				}
+				sender.sendMessage(message);
 			}
 		}
 	}
@@ -151,13 +140,15 @@ public class Messenger {
 			sender.sendMessage(getTertiaryColor() + "    - " + info.description());
 		}
 		for (SubCommandInfo cmdInfo : commands) {
-			String arguments = "";
-			for (int i = 0; i < cmdInfo.arguments().length; i++) {
-				arguments += (i > 0 ? " " : "") + cmdInfo.arguments()[i].argName();
-			}
-			sender.sendMessage(getSecondaryColor() + "  /" + getMainCmd() + " " + info.name() + " " + arguments);
-			if (cmdInfo.description() != null && !cmdInfo.description().trim().isEmpty()) {
-				sender.sendMessage(getTertiaryColor() + "    - " + cmdInfo.description());
+			if (DeadmanExecutor.hasCommandPerm(sender, cmdInfo.permissions())) {
+				String arguments = "";
+				for (int i = 0; i < cmdInfo.arguments().length; i++) {
+					arguments += (i > 0 ? " " : "") + cmdInfo.arguments()[i].argName();
+				}
+				sender.sendMessage(getSecondaryColor() + "  /" + getMainCmd() + " " + info.name() + " " + arguments);
+				if (cmdInfo.description() != null && !cmdInfo.description().trim().isEmpty()) {
+					sender.sendMessage(getTertiaryColor() + "    - " + cmdInfo.description());
+				}
 			}
 		}
 	}
@@ -173,7 +164,18 @@ public class Messenger {
 		List<CommandInfo> cmdInfos = new ArrayList<CommandInfo>();
 		for (CommandWrapper<?> cmdWrapper : commandMap.values()) {
 			if (DeadmanExecutor.hasCommandPerm(sender, cmdWrapper.getInfo().permissions())) {
-				cmdInfos.add(cmdWrapper.getInfo());
+				// Check permisisons at SubCommand scope as well.
+				SubCommandInfo[] subCmds = cmdWrapper.getInfo().subCommands();
+				if (subCmds.length > 0) {
+					for (SubCommandInfo subCmdInfo : subCmds) {
+						if (DeadmanExecutor.hasCommandPerm(sender, subCmdInfo.permissions())) {
+							cmdInfos.add(cmdWrapper.getInfo());
+							break;
+						}
+					}
+				} else {
+					cmdInfos.add(cmdWrapper.getInfo());
+				}
 			}
 		}
 		CommandInfo[] infos = cmdInfos.toArray(new CommandInfo[cmdInfos.size()]);

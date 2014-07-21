@@ -6,6 +6,7 @@ package org.deadmandungeons.deadmanplugin;
  * If a Timer is set as global, the time will elapse based on global time regardless of server up-time.<br />
  * @author Jon
  */
+// TODO make Timer interface and an implementation for global and local timers
 public class Timer {
 	
 	private long expire;

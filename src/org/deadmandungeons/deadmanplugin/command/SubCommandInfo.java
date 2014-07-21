@@ -36,4 +36,12 @@ public @interface SubCommandInfo {
 	 */
 	public String[] permissions() default {};
 	
+	/**
+	 * A flag stating whether or not the SubCommand can only be executed in-game.
+	 * This flag has a lower priority than the {@link CommandInfo#inGameOnly()} flag,
+	 * meaning if inGameOnly is true at CommandInfo scope, this flag will not be evaluated
+	 * if the command was not executed by a player.
+	 */
+	public boolean inGameOnly() default false;
+	
 }

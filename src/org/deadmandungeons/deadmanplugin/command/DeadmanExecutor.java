@@ -121,11 +121,9 @@ public abstract class DeadmanExecutor implements CommandExecutor {
 			plugin.getMessenger().sendMessage(sender, "failed.no-permission");
 			return false;
 		}
-		if (cmdWrapper.info.inGameOnly()) {
-			if (sender instanceof Player == false) {
-				sender.sendMessage(ChatColor.RED + "This command can only be used in game.");
-				return false;
-			}
+		if (cmdWrapper.info.inGameOnly() && !(sender instanceof Player)) {
+			sender.sendMessage(ChatColor.RED + "This command can only be used in game.");
+			return false;
 		}
 		
 		if (args[args.length - 1].equals("?") || args[args.length - 1].equals("help")) {
@@ -140,9 +138,15 @@ public abstract class DeadmanExecutor implements CommandExecutor {
 			plugin.getMessenger().sendCommandUsage(cmdWrapper.info, sender);
 			return false;
 		}
-		if (subCmd.info() != null && !hasCommandPerm(sender, subCmd.info().permissions())) {
-			plugin.getMessenger().sendMessage(sender, "failed.no-permission");
-			return false;
+		if (subCmd.info() != null) {
+			if (subCmd.info().inGameOnly() && !(sender instanceof Player)) {
+				sender.sendMessage(ChatColor.RED + "This command can only be used in game.");
+				return false;
+			}
+			if (!hasCommandPerm(sender, subCmd.info().permissions())) {
+				plugin.getMessenger().sendMessage(sender, "failed.no-permission");
+				return false;
+			}
 		}
 		
 		Result<Arguments> conversionResult = new Arguments.Converter().forSubCommand(subCmd).convert();
