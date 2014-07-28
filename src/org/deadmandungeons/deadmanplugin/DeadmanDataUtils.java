@@ -10,6 +10,9 @@ import java.util.regex.Pattern;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.deadmandungeons.deadmanplugin.timer.GlobalTimer;
+import org.deadmandungeons.deadmanplugin.timer.LocalTimer;
+import org.deadmandungeons.deadmanplugin.timer.Timer;
 
 /**
  * <b>A utility class to get variables from a formatted string used for YAML data storage.</b> <br />
@@ -88,8 +91,8 @@ public class DeadmanDataUtils {
 	
 	/**
 	 * This is used to convert the given String config entry into a Timer object<br />
-	 * The given String must contain the key/value pairs for the following keys:<br />
-	 * {@link Keys#DURATION}, {@link Keys#EXPIRATION}, {@link Keys#PASSED}
+	 * The given String must contain the key/value pairs for the {@link Keys#DURATION} key,
+	 * and either the {@link Keys#EXPIRE} key or the {@link Keys#ELAPSED} key.
 	 * @param entry - The String entry containing all of the necessary Timer Key and value pairs
 	 * @param global - The boolean flag stating weather or not the timer is global (true) or local (false)
 	 * @return The Timer that the given String described. null will be returned if the entry String
@@ -100,11 +103,23 @@ public class DeadmanDataUtils {
 			return null;
 		}
 		Long duration = getLong(entry, Keys.DURATION);
-		Long expired = getLong(entry, Keys.EXPIRATION);
-		Long passed = getLong(entry, Keys.PASSED);
+		Long expire = getLong(entry, Keys.EXPIRE);
+		Long elapsed = getLong(entry, Keys.ELAPSED);
 		
-		if (duration != null && duration > 0 && expired != null && expired > 0 && passed != null && passed > 0) {
-			return new Timer(duration.longValue(), passed.longValue(), expired.longValue(), global);
+		if (duration != null && duration > 0) {
+			if (expire != null && expire > 0) {
+				GlobalTimer globalTimer = new GlobalTimer(duration.longValue(), expire.longValue());
+				if (!global) {
+					return globalTimer.toLocalTimer();
+				}
+				return globalTimer;
+			} else if (elapsed != null && elapsed >= 0) {
+				LocalTimer localTimer = new LocalTimer(duration.longValue(), elapsed.longValue());
+				if (global) {
+					return localTimer.toGlobalTimer();
+				}
+				return localTimer;
+			}
 		}
 		return null;
 	}
@@ -136,11 +151,14 @@ public class DeadmanDataUtils {
 	}
 	
 	/**
-	 * @param timer - The TImer that the returned String should represent
+	 * @param timer - The Timer that the returned String should represent
 	 * @return A String representation of the given Timer in the format used for config data entries
 	 */
 	public static String formatTimer(Timer timer) {
-		return Keys.DURATION.toString() + timer.getDuration() + ", " + Keys.EXPIRATION + timer.getExpire() + ", " + Keys.PASSED + timer.getElapsed();
+		if (timer instanceof GlobalTimer) {
+			return Keys.DURATION.toString() + timer.getDuration() + ", " + Keys.EXPIRE + ((GlobalTimer) timer).getExpire();
+		}
+		return Keys.DURATION.toString() + timer.getDuration() + ", " + Keys.ELAPSED + ((LocalTimer) timer).getElapsed();
 	}
 	
 	/**
