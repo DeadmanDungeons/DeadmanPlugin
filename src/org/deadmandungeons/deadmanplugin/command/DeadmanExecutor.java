@@ -19,9 +19,9 @@ import org.deadmandungeons.deadmanplugin.command.Arguments.SubCommand;
 
 /**
  * The base CommandExecutor for Deadman plugins.<br />
- * When inherited, all commands need to be registered, and all ArgumentConverters must be put in the
- * converters HashMap. A default converter is already created for arguments of type: Integer, ChatColor,
- * Long, and Boolean. These can be overridden by supplying your own ArgumentConverter for that type
+ * When inherited, any {@link Command}, {@link PseudoCommand}, {@link ArgumentConverter}, and HelpInfo need to
+ * be registered using the respective register method. A default converter is already created for arguments of
+ * type: Integer, ChatColor, Long, and Boolean. These can be overridden by supplying your own ArgumentConverter for that type
  * @author Jon
  */
 public abstract class DeadmanExecutor implements CommandExecutor {

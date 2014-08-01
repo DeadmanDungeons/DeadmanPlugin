@@ -13,6 +13,10 @@ import org.bukkit.plugin.java.JavaPlugin;
 import com.sk89q.worldedit.bukkit.WorldEditPlugin;
 import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
 
+/**
+ * The base abstract class to be extended by the main class for all Deadman plugins.
+ * @author Jon
+ */
 public abstract class DeadmanPlugin extends JavaPlugin {
 	
 	public static final String LANG_DIRECTORY = "lang" + File.separator;

@@ -88,8 +88,8 @@ public class Messenger {
 	}
 	
 	/**
-	 * This method calls {@link #sendMessage(CommandSender, String, Object...) sendMessage()} but with a error sound played to the CommandSender if
-	 * the sender is a player
+	 * This method calls {@link #sendMessage(CommandSender, String, Object...) sendMessage()} but
+	 * with a error sound played to the CommandSender if the sender is a player
 	 */
 	public void sendErrorMessage(CommandSender sender, String path, Object... vars) {
 		sendMessage(sender, path, vars);
@@ -100,8 +100,8 @@ public class Messenger {
 	}
 	
 	/**
-	 * This method calls {@link #sendMessage(CommandSender, String, Object...) sendMessage()} but with a success sound played to the CommandSender if
-	 * the sender is a player
+	 * This method calls {@link #sendMessage(CommandSender, String, Object...) sendMessage()} but
+	 * with a success sound played to the CommandSender if the sender is a player
 	 */
 	public void sendSuccessMessage(CommandSender sender, String path, Object... vars) {
 		sendMessage(sender, path, vars);
