@@ -12,11 +12,13 @@ import org.bukkit.ChatColor;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.metadata.FixedMetadataValue;
 import org.deadmandungeons.deadmanplugin.DeadmanPlugin;
 import org.deadmandungeons.deadmanplugin.DeadmanUtils;
 import org.deadmandungeons.deadmanplugin.Result;
 import org.deadmandungeons.deadmanplugin.command.Arguments.SubCommand;
 
+//TODO use Messenger but check if message exists and fallback on hardcoded messages
 /**
  * The base CommandExecutor for Deadman plugins.<br />
  * When inherited, any {@link Command}, {@link PseudoCommand}, {@link ArgumentConverter}, and HelpInfo need to
@@ -38,9 +40,15 @@ public abstract class DeadmanExecutor implements CommandExecutor {
 	private Map<Class<?>, ArgumentConverter<?>> converters = new HashMap<Class<?>, ArgumentConverter<?>>();
 	
 	private DeadmanPlugin plugin;
+	private int coolDown;
 	
 	public DeadmanExecutor(DeadmanPlugin plugin) {
+		this(plugin, -1);
+	}
+	
+	public DeadmanExecutor(DeadmanPlugin plugin, int coolDown) {
 		this.plugin = plugin;
+		this.coolDown = coolDown;
 		
 		/*
 		 * Default argument type converters.
@@ -104,11 +112,28 @@ public abstract class DeadmanExecutor implements CommandExecutor {
 				return true;
 			}
 		}
+		
 		PseudoCommand pseudoCommand = getPseudoCommand(args[0]);
 		if (pseudoCommand != null && args.length == 1) {
 			if (pseudoCommand.execute(sender)) {
 				return true;
 			}
+		}
+		
+		if (coolDown > 0 && sender instanceof Player && !((Player) sender).isOp()) {
+			Player player = (Player) sender;
+			String metadataKey = plugin.getName() + "-cmd-cooldown";
+			Long timestamp = DeadmanUtils.getMetadata(plugin, player, metadataKey, Long.class);
+			if (timestamp != null) {
+				long timeLeft = ((timestamp) + (coolDown * 1000)) - System.currentTimeMillis();
+				if (timeLeft > 0) {
+					int secondsLeft = (int) Math.ceil(timeLeft / 1000);
+					player.sendMessage(ChatColor.RED + "You can execute this command in " + secondsLeft + " seconds");
+					return false;
+				}
+			}
+			
+			player.setMetadata(metadataKey, new FixedMetadataValue(plugin, System.currentTimeMillis()));
 		}
 		
 		CommandWrapper<?> cmdWrapper = getMatchingCommand(args[0]);
@@ -185,7 +210,7 @@ public abstract class DeadmanExecutor implements CommandExecutor {
 	 * the Command using {@link #registerCommand(Command)}.
 	 * @param command - The class of the command that should be registered
 	 */
-	protected final <T extends Command> void registerCommand(Class<T> commandClass) {
+	public final <T extends Command> void registerCommand(Class<T> commandClass) {
 		Validate.notNull(commandClass);
 		CommandInfo info = getCommandInfo(commandClass);
 		if (info != null) {
@@ -202,7 +227,7 @@ public abstract class DeadmanExecutor implements CommandExecutor {
 	 * Use this register method over {@link #registerCommand(Class)} when the Command class does not have a public no-arg constructor.
 	 * @param command - An instance of the command that should be registered
 	 */
-	protected final <T extends Command> void registerCommand(T command) {
+	public final <T extends Command> void registerCommand(T command) {
 		Validate.notNull(command);
 		CommandInfo info = getCommandInfo(command.getClass());
 		if (info != null) {
@@ -263,7 +288,7 @@ public abstract class DeadmanExecutor implements CommandExecutor {
 	 * regular command name.
 	 * @param pseudoCommand - The PseudoCommand object to be executed when this PseudoCommand is called
 	 */
-	protected final void registerPseudoCommad(String cmdName, PseudoCommand pseudoCommand) {
+	public final void registerPseudoCommad(String cmdName, PseudoCommand pseudoCommand) {
 		Validate.notNull(cmdName);
 		Validate.notNull(pseudoCommand);
 		

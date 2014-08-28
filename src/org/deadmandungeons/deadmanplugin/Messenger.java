@@ -34,6 +34,8 @@ public class Messenger {
 	private static final String FORMATTING_REGEX = "&[\\da-fk-or]";
 	private static final Pattern FORMAT_PATTERN = Pattern.compile(FORMATTING_REGEX);
 	
+	private static final String MISSING_COLOR = "The '%s' property is missing from the lang file. Defaulting to %s.";
+	
 	private Map<String, String> cachedMessages = new HashMap<String, String>();
 	
 	private String mainCmd;
@@ -222,13 +224,16 @@ public class Messenger {
 	 */
 	public ChatColor getPrimaryColor() {
 		if (primaryColor == null) {
-			String colorCode = getRawMessage("primary-color");
+			String property = "primary-color";
+			String colorCode = getRawMessage(property);
 			if (colorCode != null) {
 				primaryColor = ChatColor.getByChar(colorCode.replace("&", ""));
-				;
+			} else {
+				plugin.getLogger().warning(String.format(MISSING_COLOR, property, ChatColor.GOLD));
+				primaryColor = ChatColor.GOLD;
 			}
 		}
-		return primaryColor == null ? ChatColor.GOLD : primaryColor;
+		return primaryColor;
 	}
 	
 	/**
@@ -237,9 +242,13 @@ public class Messenger {
 	 */
 	public ChatColor getSecondaryColor() {
 		if (secondaryColor == null) {
-			String colorCode = getRawMessage("secondary-color");
+			String property = "secondary-color";
+			String colorCode = getRawMessage(property);
 			if (colorCode != null) {
 				secondaryColor = ChatColor.getByChar(colorCode.replace("&", ""));
+			} else {
+				plugin.getLogger().warning(String.format(MISSING_COLOR, property, ChatColor.GRAY));
+				secondaryColor = ChatColor.GRAY;
 			}
 		}
 		return secondaryColor == null ? ChatColor.GRAY : secondaryColor;
@@ -251,12 +260,16 @@ public class Messenger {
 	 */
 	public ChatColor getTertiaryColor() {
 		if (tertiaryColor == null) {
-			String colorCode = getRawMessage("tertiary-color");
+			String property = "tertiary-color";
+			String colorCode = getRawMessage(property);
 			if (colorCode != null) {
 				tertiaryColor = ChatColor.getByChar(colorCode.replace("&", ""));
+			} else {
+				plugin.getLogger().warning(String.format(MISSING_COLOR, property, ChatColor.DARK_GRAY));
+				tertiaryColor = ChatColor.DARK_GRAY;
 			}
 		}
-		return tertiaryColor == null ? getSecondaryColor() : tertiaryColor;
+		return tertiaryColor;
 	}
 	
 	/**

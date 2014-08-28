@@ -4,16 +4,22 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.MetadataValue;
+import org.bukkit.metadata.Metadatable;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.util.BlockIterator;
+import org.deadmandungeons.deadmanplugin.filedata.DataEntry;
+import org.deadmandungeons.deadmanplugin.filedata.DataEntry.DefaultKey;
 
 /**
  * Do not instantiate this class. Public constructor must be provided to be extended from each plugin
@@ -23,12 +29,14 @@ public class DeadmanUtils {
 	
 	private static final String DURATION_REGEX = "^\\d+[dD](:\\d+[hH](:\\d+[mM])?)?$|^\\d+[dD]:\\d+[mM]$|^\\d+[hH](:\\d+[mM])?$|^\\d+[mM]$";
 	private static final Pattern DURATION_PATTERN = Pattern.compile(DURATION_REGEX);
+	private static final Pattern LOCATION_PATTERN = Pattern.compile("X(-?\\d+)Y(-?\\d+)Z(-?\\d+)W(.+)");
 	
 	// no private constructor to allow this util class to be extended
 	
 	/**
+	 * This will return a rounded String representation of the given duration in milliseconds.
 	 * @param millis - The amount of time in milliseconds
-	 * @return - the amount of time passed in the format of: # days, # hours, # minutes, #seconds
+	 * @return - the amount of time passed in the format of: # days, # hrs, # mins, #seconds
 	 */
 	public static String getDurationString(long millis) {
 		String formattedTimer = "";
@@ -179,16 +187,16 @@ public class DeadmanUtils {
 		return sign;
 	}
 	
-	public static void resetSign(LocationMetadata signLoc) {
-		MetadataValue blockIdVal = signLoc.getMetaData().get(Keys.BLOCKID);
-		MetadataValue blockDataVal = signLoc.getMetaData().get(Keys.BLOCKDATA);
-		if (blockIdVal != null && blockDataVal != null) {
-			int blockId = blockIdVal.asInt();
-			byte blockData = blockDataVal.asByte();
-			if (blockId == 68 || blockId == 63) {
-				signLoc.getBlock().setTypeIdAndData(blockId, blockData, true);
+	public static boolean resetSign(DataEntry dataEntry) {
+		Location loc = dataEntry.getLocation();
+		if (loc != null) {
+			Number blockId = dataEntry.getNumber(DefaultKey.ID);
+			Number blockData = dataEntry.getNumber(DefaultKey.DATA);
+			if (blockId != null && blockData != null) {
+				return loc.getBlock().setTypeIdAndData(blockId.intValue(), blockData.byteValue(), true);
 			}
 		}
+		return false;
 	}
 	
 	public static void clearSign(Sign sign) {
@@ -199,6 +207,50 @@ public class DeadmanUtils {
 			sign.setLine(3, "");
 			sign.update(true);
 		}
+	}
+	
+	/**
+	 * This is used to convert the given String config key into a Location object<br />
+	 * The given String key must be in the format of:<br />
+	 * <code>X&lt;x-coord&gt;Y&lt;y-coord&gt;Z&lt;z-coord&gt;W&lt;world&gt;</code><br />
+	 * Example: X351Y154Z-1478Wempire
+	 * @param key - The String key in the format of a location to be converted into a Location
+	 * @return The Location the given String key represents or null if the key is improperly formatted
+	 */
+	public static Location getLocationFromKey(String key) {
+		if (key != null && !key.isEmpty()) {
+			Matcher matcher = LOCATION_PATTERN.matcher(key);
+			if (matcher.find()) {
+				int xCoord = Integer.parseInt(matcher.group(1));
+				int yCoord = Integer.parseInt(matcher.group(2));
+				int zCoord = Integer.parseInt(matcher.group(3));
+				World world = Bukkit.getWorld(matcher.group(4));
+				if (world != null) {
+					return new Location(world, xCoord, yCoord, zCoord);
+				}
+			}
+		}
+		return null;
+	}
+	
+	/**
+	 * @param loc - The Location that the returned String should represent
+	 * @return A String representation of the given Location in the format used for config data keys
+	 */
+	public static String formatLocationKey(Location loc) {
+		return "X" + loc.getBlockX() + "Y" + loc.getBlockY() + "Z" + loc.getBlockZ() + "W" + loc.getWorld().getName();
+	}
+	
+	
+	public static <T> T getMetadata(Plugin plugin, Metadatable metadatable, String key, Class<T> type) {
+		for (MetadataValue value : metadatable.getMetadata(key)) {
+			if (value.getOwningPlugin().equals(plugin)) {
+				if (type.isAssignableFrom(value.value().getClass())) {
+					return type.cast(value.value());
+				}
+			}
+		}
+		return null;
 	}
 	
 	public static ChatColor getChatColor(String color) {
@@ -243,22 +295,6 @@ public class DeadmanUtils {
 			return false;
 		}
 		return true;
-	}
-	
-	public static boolean isPositiveNumber(String str) {
-		if (str == null || str.isEmpty()) {
-			return false;
-		}
-		for (char c : str.toCharArray()) {
-			if (!Character.isDigit(c)) {
-				return false;
-			}
-		}
-		return true;
-	}
-	
-	public static boolean isNumeric(String str) {
-		return str.matches("-?\\d+(\\.\\d+)?");
 	}
 	
 }

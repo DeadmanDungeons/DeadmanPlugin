@@ -2,6 +2,7 @@ package org.deadmandungeons.deadmanplugin;
 
 import org.bukkit.block.Sign;
 import org.bukkit.event.block.SignChangeEvent;
+import org.deadmandungeons.deadmanplugin.filedata.DataEntry;
 
 /**
  * This abstract class is to be extended by an object that represents a certain Sign type.
@@ -11,12 +12,12 @@ import org.bukkit.event.block.SignChangeEvent;
 public abstract class DeadmanSign<T extends SignObject> {
 	
 	private Sign sign;
-	private LocationMetadata locData;
+	private DataEntry dataEntry;
 	private T signObject;
 	
-	public DeadmanSign(Sign sign, LocationMetadata locData, T signObject) {
+	public DeadmanSign(Sign sign, DataEntry dataEntry, T signObject) {
 		this.sign = sign;
-		this.locData = locData;
+		this.dataEntry = dataEntry;
 		this.signObject = signObject;
 	}
 	
@@ -38,15 +39,15 @@ public abstract class DeadmanSign<T extends SignObject> {
 	 * @return The {@link org.deadmandungeons.deadmanplugin.LocationMetadata LocationMetadata} object
 	 * containing the metadata for this sign such as block ID and block data
 	 */
-	public LocationMetadata getLocData() {
-		return locData;
+	public DataEntry getDataEntry() {
+		return dataEntry;
 	}
 	
 	/**
 	 * @param locData - The {@link org.deadmandungeons.deadmanplugin.LocationMetadata LocationMetadata} object to be set
 	 */
-	public void setLocData(LocationMetadata locData) {
-		this.locData = locData;
+	public void setDataEntry(DataEntry dataEntry) {
+		this.dataEntry = dataEntry;
 	}
 	
 	/**

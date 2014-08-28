@@ -34,12 +34,12 @@ public abstract class SignEventListener<V extends SignObject, T extends DeadmanS
 	public <U extends DeadmanPlugin> SignEventListener(String signTag, U plugin) {
 		signTags = new ArrayList<String>();
 		signTags.add(signTag);
-		Bukkit.getServer().getPluginManager().registerEvents(this, plugin);
+		Bukkit.getPluginManager().registerEvents(this, plugin);
 	}
 	
 	public <U extends DeadmanPlugin> SignEventListener(List<String> signTags, U plugin) {
 		this.signTags = signTags;
-		Bukkit.getServer().getPluginManager().registerEvents(this, plugin);
+		Bukkit.getPluginManager().registerEvents(this, plugin);
 	}
 	
 	@EventHandler(ignoreCancelled = true)

@@ -1,6 +1,6 @@
 name: DeadmanPlugin
 main: org.deadmandungeons.deadmanplugin.DeadmanCore
-version: 1.0
+version: 1.6.0
 author: Weasel_Squeezer
 website: http://www.deadmandungeons.org
 
@@ -30,6 +30,8 @@ permissions:
     deadmandungeons.knight:
         default: false
     deadmandungeons.lord:
+        default: false
+    deadmandungeons.legendary:
         default: false
     deadmandungeons.vip:
         default: false
