@@ -34,7 +34,7 @@ public class Messenger {
 	private static final String FORMATTING_REGEX = "&[\\da-fk-or]";
 	private static final Pattern FORMAT_PATTERN = Pattern.compile(FORMATTING_REGEX);
 	
-	private static final String MISSING_COLOR = "The '%s' property is missing from the lang file. Defaulting to %s.";
+	private static final String BAD_COLOR = "The '%s' property is either missing from the lang file or an invalid value. Defaulting to %s.";
 	
 	private Map<String, String> cachedMessages = new HashMap<String, String>();
 	
@@ -226,10 +226,9 @@ public class Messenger {
 		if (primaryColor == null) {
 			String property = "primary-color";
 			String colorCode = getRawMessage(property);
-			if (colorCode != null) {
-				primaryColor = ChatColor.getByChar(colorCode.replace("&", ""));
-			} else {
-				plugin.getLogger().warning(String.format(MISSING_COLOR, property, ChatColor.GOLD));
+			primaryColor = DeadmanUtils.getChatColor(colorCode);
+			if (primaryColor == null) {
+				plugin.getLogger().warning(String.format(BAD_COLOR, property, ChatColor.GOLD));
 				primaryColor = ChatColor.GOLD;
 			}
 		}
@@ -244,10 +243,9 @@ public class Messenger {
 		if (secondaryColor == null) {
 			String property = "secondary-color";
 			String colorCode = getRawMessage(property);
-			if (colorCode != null) {
-				secondaryColor = ChatColor.getByChar(colorCode.replace("&", ""));
-			} else {
-				plugin.getLogger().warning(String.format(MISSING_COLOR, property, ChatColor.GRAY));
+			secondaryColor = DeadmanUtils.getChatColor(colorCode);
+			if (secondaryColor == null) {
+				plugin.getLogger().warning(String.format(BAD_COLOR, property, ChatColor.GRAY));
 				secondaryColor = ChatColor.GRAY;
 			}
 		}
@@ -255,17 +253,16 @@ public class Messenger {
 	}
 	
 	/**
-	 * @return The third ChatColor configured in the plugins lang file, or the secondary color by default if
+	 * @return The third ChatColor configured in the plugins lang file, or ChatColor.DARK_GRAY by default if
 	 * no color is configured
 	 */
 	public ChatColor getTertiaryColor() {
 		if (tertiaryColor == null) {
 			String property = "tertiary-color";
 			String colorCode = getRawMessage(property);
-			if (colorCode != null) {
-				tertiaryColor = ChatColor.getByChar(colorCode.replace("&", ""));
-			} else {
-				plugin.getLogger().warning(String.format(MISSING_COLOR, property, ChatColor.DARK_GRAY));
+			tertiaryColor = DeadmanUtils.getChatColor(colorCode);
+			if (tertiaryColor == null) {
+				plugin.getLogger().warning(String.format(BAD_COLOR, property, ChatColor.DARK_GRAY));
 				tertiaryColor = ChatColor.DARK_GRAY;
 			}
 		}

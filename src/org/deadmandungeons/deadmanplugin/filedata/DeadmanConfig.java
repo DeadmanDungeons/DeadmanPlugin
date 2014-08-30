@@ -58,52 +58,9 @@ public class DeadmanConfig {
 	}
 	
 	/**
-	 * A Converter is used to convert an Object obtained from the plugins Config to the appropriate type
-	 * @param <T> - The type to be converted to
-	 * @author Jon
-	 */
-	public static interface Converter<T> {
-		
-		T convert(Object obj);
-	}
-	
-	/**
-	 * @param <E> - The Enum of this ConfigEnum
-	 * @param <T> - The type of the config values for this ConfigEnum
-	 * @author Jon
-	 */
-	public static interface ConfigEnum<E extends Enum<E> & ConfigEnum<E, T>, T> {
-		
-		/**
-		 * @return the String path of the config value
-		 */
-		String getPath();
-		
-		/**
-		 * @return true if this config value is in list format, and false otherwise
-		 */
-		ValueType getValueType();
-	}
-	
-	public static enum ValueType {
-		/**
-		 * Represents a single configuration value
-		 */
-		SINGLE,
-		/**
-		 * Represents a list of configuration values
-		 */
-		LIST,
-		/**
-		 * Represents a map of configuration keys the configuration values
-		 */
-		MAP
-	}
-	
-	/**
 	 * This will load both list and non-list config values
 	 * @param enumClass - The class of the ConfigEnum to be loaded
-	 * @param type - The type of config value that loaded ConfigEnum is for
+	 * @param type - The type of config value that the loaded ConfigEnum is for
 	 * @throws IllegalStateException if a converter for the specified type has not been registered,
 	 * or if a config value is either missing from the default configuration file or invalid based of the specified type
 	 */
@@ -403,6 +360,49 @@ public class DeadmanConfig {
 				return null;
 			}
 		});
+	}
+	
+	/**
+	 * A Converter is used to convert an Object obtained from the plugins Config to the appropriate type
+	 * @param <T> - The type to be converted to
+	 * @author Jon
+	 */
+	public static interface Converter<T> {
+		
+		T convert(Object obj);
+	}
+	
+	/**
+	 * @param <E> - The Enum of this ConfigEnum
+	 * @param <T> - The type of the config values for this ConfigEnum
+	 * @author Jon
+	 */
+	public static interface ConfigEnum<E extends Enum<E> & ConfigEnum<E, T>, T> {
+		
+		/**
+		 * @return the String path of the config value
+		 */
+		String getPath();
+		
+		/**
+		 * @return true if this config value is in list format, and false otherwise
+		 */
+		ValueType getValueType();
+	}
+	
+	public static enum ValueType {
+		/**
+		 * Represents a single configuration value
+		 */
+		SINGLE,
+		/**
+		 * Represents a list of configuration values
+		 */
+		LIST,
+		/**
+		 * Represents a map of configuration keys the configuration values
+		 */
+		MAP
 	}
 	
 }

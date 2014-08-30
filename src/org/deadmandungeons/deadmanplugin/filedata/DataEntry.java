@@ -15,11 +15,11 @@ import org.deadmandungeons.deadmanplugin.timer.GlobalTimer;
 import org.deadmandungeons.deadmanplugin.timer.LocalTimer;
 import org.deadmandungeons.deadmanplugin.timer.Timer;
 
+import com.google.common.collect.ImmutableMap;
+
 /**
  * A container class for the Key/Value pairs in a single data entry in a YAML file.<br>
- * Use DataEntry.{@link #builder()}.{@link Builder#build() build()} to get an instance of this class.<br>
- * The DataEntry.Builder class can create a DataEntry from a raw String as from file, or be passed values
- * to add to the set of key/value pairs in the built DataEntry.<br>
+ * Additional formatting utility methods are provided to format specific objects as specified by {@link #toString()}<br>
  * Enum constants are used as the keys to a DataEntry value to enforce uniformity and validity in
  * the parsed Keys.
  * @see {@link #toString()} for information on the format of a DataEntry
@@ -27,11 +27,35 @@ import org.deadmandungeons.deadmanplugin.timer.Timer;
  */
 public class DataEntry {
 	
+	// Matches a java enum constant for the key group, and any character that is not a comma as the value group, separated by a colon
 	private static final Pattern VALUE_PATTERN = Pattern.compile("([a-zA-Z][a-zA-Z0-9$_]*?):([^,]+)");
 	private static final String INVALID_MSG_1 = "The given value has a comma character. Commas are not allowed";
 	private static final String INVALID_MSG_2 = "The value for key '%s' has a comma character. Commas are not allowed";
 	
 	private final Map<String, Object> values;
+	
+	/**
+	 * Construct an empty DataEntry instance
+	 */
+	public DataEntry() {
+		values = new HashMap<String, Object>();
+	}
+	
+	/**
+	 * Construct a DataEntry instance with the key/value pairs defined in the given entryStr
+	 * The given String entry should be in the format as specified by {@link DataEntry#toString()}
+	 * @param entry - The raw data entry String containing the key/value pairs to include in the returned DataEntry
+	 */
+	public DataEntry(String entryStr) {
+		values = new HashMap<String, Object>();
+		Matcher valueMatcher = VALUE_PATTERN.matcher(entryStr);
+		while (valueMatcher.find()) {
+			String key = valueMatcher.group(1);
+			String value = valueMatcher.group(2);
+			values.put(key.toUpperCase(), value);
+		}
+	}
+	
 	
 	/**
 	 * @return a new DataEntry.Builder instance
@@ -64,26 +88,11 @@ public class DataEntry {
 		protected abstract T self();
 		
 		/**
-		 * The given String entry should be in the format as specified by {@link DataEntry#toString()}
-		 * @param entry - The raw data entry String containing the key/value pairs to include in the built DataEntry
-		 * @return this builder
-		 */
-		public T fromEntry(String entry) {
-			Matcher valueMatcher = VALUE_PATTERN.matcher(entry);
-			while (valueMatcher.find()) {
-				String key = valueMatcher.group(1);
-				String value = valueMatcher.group(2);
-				values.put(key.toUpperCase(), value);
-			}
-			return self();
-		}
-		
-		/**
 		 * @see {@link DataEntry#setLocation(Location)}
 		 * @param location - The location to set in the built DataEntry
 		 * @return this builder
 		 */
-		public T withLocation(Location location) {
+		public final T withLocation(Location location) {
 			this.location = location;
 			return self();
 		}
@@ -93,12 +102,12 @@ public class DataEntry {
 		 * @param materialData - The MaterialData to set in the built DataEntry
 		 * @return this builder
 		 */
-		public T withMaterialData(MaterialData materialData) {
+		public final T withMaterialData(MaterialData materialData) {
 			this.materialData = materialData;
 			return self();
 		}
 		
-		public T withTimer(Timer timer) {
+		public final T withTimer(Timer timer) {
 			this.timer = timer;
 			return self();
 		}
@@ -107,19 +116,14 @@ public class DataEntry {
 		 * <b>Note:</b> The given value cannot have a comma in the string returned by its toString invocation
 		 * @param key - The Enum Key representing the value to set
 		 * @param value - The value to set. Indexed by the given Key.<br>
+		 * @throws IllegalArgumentException if the given value has a comma in its String representation
 		 * @return this builder
 		 */
-		public T withValue(Enum<?> key, Object value) {
-			values.put(key.name(), value);
-			return self();
-		}
-		
-		private T validate() {
-			for (String key : values.keySet()) {
-				if (values.get(key).toString().contains(",")) {
-					throw new IllegalArgumentException(String.format(INVALID_MSG_2, key));
-				}
+		public final T withValue(Enum<?> key, Object value) {
+			if (value.toString().contains(",")) {
+				throw new IllegalArgumentException(String.format(INVALID_MSG_2, key));
 			}
+			values.put(key.name().toUpperCase(), value);
 			return self();
 		}
 		
@@ -128,14 +132,12 @@ public class DataEntry {
 		 * @throws IllegalArgumentException - if one of the values has a comma in the string returned by its toString invocation
 		 */
 		public DataEntry build() throws IllegalArgumentException {
-			validate();
-			
 			return new DataEntry(this);
 		}
 	}
 	
 	
-	private DataEntry(Builder<?> builder) {
+	protected DataEntry(Builder<?> builder) {
 		values = builder.values;
 		
 		if (builder.location != null) {
@@ -149,12 +151,24 @@ public class DataEntry {
 		}
 	}
 	
+	
 	/**
 	 * @param key - The Enum Key representing the value to get
 	 * @return the value that the given Enum key represents in this DataEntry, or null if no value exists for the given key
 	 */
 	public final Object getValue(Enum<?> key) {
-		return values.get(key.name());
+		return getValue(key, null);
+	}
+	
+	/**
+	 * @param key - The Enum Key representing the value to get
+	 * @param def - The default value to return if no value exists for the given key
+	 * @return the value that the given Enum key represents in this DataEntry,
+	 * or the given default if no value exists for the given key
+	 */
+	public final Object getValue(Enum<?> key, Object def) {
+		Object value = values.get(key.name().toUpperCase());
+		return value != null ? value : def;
 	}
 	
 	/**
@@ -167,9 +181,9 @@ public class DataEntry {
 		Validate.notNull(key, "key cannot be null");
 		if (value != null) {
 			Validate.isTrue(!value.toString().contains(","), INVALID_MSG_1);
-			values.put(key.name(), value);
+			values.put(key.name().toUpperCase(), value);
 		} else {
-			values.remove(key.name());
+			values.remove(key.name().toUpperCase());
 		}
 	}
 	
@@ -179,6 +193,16 @@ public class DataEntry {
 	 * @return A Number object of the value indexed by the given Key, or null if a Number value did not exist at the given Key
 	 */
 	public final Number getNumber(Enum<?> key) {
+		return getNumber(key, null);
+	}
+	
+	/**
+	 * @param key - The Enum Key representing the Number to get
+	 * @param def - The default Number to return if no Number value exists for the given key
+	 * @return A Number object of the value indexed by the given Key,
+	 * or the default Number if a Number value did not exist at the given Key
+	 */
+	public final Number getNumber(Enum<?> key, Number def) {
 		Object value = getValue(key);
 		if (value != null) {
 			if (value instanceof Number) {
@@ -189,35 +213,22 @@ public class DataEntry {
 				return number;
 			}
 		}
-		return null;
+		return def;
 	}
 	
-	/**
-	 * @param key - The Enum Key representing the Number to set
-	 * @param number - The Number to set. Indexed by the given Key.<br>
-	 * If number is null, the key/value pair for the given key will be removed from this DataEntry.
-	 */
-	public final void setNumber(Enum<?> key, Number number) {
-		Validate.notNull(key, "key cannot be null");
-		if (number != null) {
-			setValue(key, number);
-		} else {
-			values.remove(key.name());
-		}
-	}
 	
 	/**
-	 * @return The {@link World} object indexed at key {@link DefaultKey#WORLD}, or null if a World value does not exist for the respective Key
+	 * @return The {@link World} object indexed at key {@link Key#WORLD}, or null if a World value does not exist for the respective Key
 	 */
 	public final World getWorld() {
-		Object value = getValue(DefaultKey.WORLD);
+		Object value = getValue(Key.WORLD);
 		if (value != null) {
 			if (value instanceof World) {
 				return (World) value;
 			}
 			World world = Bukkit.getWorld(value.toString());
 			if (world != null) {
-				setValue(DefaultKey.WORLD, world);
+				setValue(Key.WORLD, world);
 			}
 			return world;
 		}
@@ -225,31 +236,27 @@ public class DataEntry {
 	}
 	
 	/**
-	 * @param world - The {@link World} object to set. Indexed by key {@link DefaultKey#WORLD}.<br>
+	 * @param world - The {@link World} object to set. Indexed by key {@link Key#WORLD}.<br>
 	 * If world is null, the World key/value pair will be removed from this DataEntry.
 	 */
 	public final void setWorld(World world) {
-		if (world != null) {
-			setValue(DefaultKey.WORLD, world);
-		} else {
-			values.remove(DefaultKey.WORLD.name());
-		}
+		setValue(Key.WORLD, world);
 	}
 	
 	/**
-	 * @return the Location defined by keys: {@link DefaultKey#WORLD}, {@link DefaultKey#XCOORD}, {@link DefaultKey#YCOORD}, {@link DefaultKey#ZCOORD}
-	 * , and optionally {@link DefaultKey#YAW}, {@link DefaultKey#PITCH}. Or null if the minimum required
+	 * @return the Location defined by keys: {@link Key#WORLD}, {@link Key#XCOORD}, {@link Key#YCOORD}, {@link Key#ZCOORD}, and optionally
+	 * {@link Key#YAW}, {@link Key#PITCH}. Or null if the minimum required
 	 * values did not exist, or were invalid
 	 */
 	public final Location getLocation() {
 		World world = getWorld();
-		Number xCoord = getNumber(DefaultKey.X);
-		Number yCoord = getNumber(DefaultKey.Y);
-		Number zCoord = getNumber(DefaultKey.Z);
+		Number xCoord = getNumber(Key.X);
+		Number yCoord = getNumber(Key.Y);
+		Number zCoord = getNumber(Key.Z);
 		if (world != null && xCoord != null && yCoord != null && zCoord != null) {
 			Location loc = new Location(world, xCoord.doubleValue(), yCoord.doubleValue(), zCoord.doubleValue());
-			Number yaw = getNumber(DefaultKey.YAW);
-			Number pitch = getNumber(DefaultKey.PITCH);
+			Number yaw = getNumber(Key.YAW);
+			Number pitch = getNumber(Key.PITCH);
 			if (yaw != null && pitch != null) {
 				loc.setYaw(yaw.floatValue());
 				loc.setPitch(pitch.floatValue());
@@ -260,43 +267,54 @@ public class DataEntry {
 	}
 	
 	/**
-	 * @param location - The {@link Location} object to set and be represented by the {@link DefaultKey#WORLD}, {@link DefaultKey#XCOORD},
-	 * {@link DefaultKey#YCOORD}, and {@link DefaultKey#ZCOORD} keys. <br>
-	 * If the yaw or pitch is not 0, they will also be represented by the {@link DefaultKey#YAW}, and {@link DefaultKey#PITCH} keys. <br>
+	 * @param location - The {@link Location} object to set and be represented by the {@link Key#WORLD}, {@link Key#XCOORD}, {@link Key#YCOORD}, and
+	 * {@link Key#ZCOORD} keys. <br>
+	 * If the yaw or pitch is not 0, they will also be represented by the {@link Key#YAW}, and {@link Key#PITCH} keys. <br>
 	 * If location is null, all of the above key/value pairs will be removed from this DataEntry.
 	 */
 	public final void setLocation(Location location) {
 		if (location != null) {
 			setWorld(location.getWorld());
-			setNumber(DefaultKey.X, location.getBlockX());
-			setNumber(DefaultKey.Y, location.getBlockY());
-			setNumber(DefaultKey.Z, location.getBlockZ());
-			if (location.getYaw() != 0) {
-				setNumber(DefaultKey.YAW, location.getYaw());
-			} else {
-				values.remove(DefaultKey.YAW);
-			}
-			if (location.getPitch() != 0) {
-				setNumber(DefaultKey.PITCH, location.getPitch());
-			} else {
-				values.remove(DefaultKey.PITCH);
-			}
+			setValue(Key.X, location.getBlockX());
+			setValue(Key.Y, location.getBlockY());
+			setValue(Key.Z, location.getBlockZ());
+			setValue(Key.YAW, (location.getYaw() != 0 ? location.getYaw() : null));
+			setValue(Key.PITCH, (location.getPitch() != 0 ? location.getPitch() : null));
 		} else {
-			values.remove(DefaultKey.WORLD.name());
-			values.remove(DefaultKey.X.name());
-			values.remove(DefaultKey.Y.name());
-			values.remove(DefaultKey.Z.name());
-			values.remove(DefaultKey.YAW.name());
-			values.remove(DefaultKey.PITCH.name());
+			setWorld(null);
+			setValue(Key.X, null);
+			setValue(Key.Y, null);
+			setValue(Key.Z, null);
+			setValue(Key.YAW, null);
+			setValue(Key.PITCH, null);
 		}
 	}
 	
 	/**
-	 * @return
+	 * @param loc - the {@link Location} to be formatted
+	 * @return the formatted String representation of the given Location with the keys: {@link Key#WORLD}, {@link Key#XCOORD}, {@link Key#YCOORD},
+	 * {@link Key#ZCOORD}, and optionally {@link Key#YAW}, {@link Key#PITCH}
+	 */
+	public static String formatLocation(Location loc) {
+		ImmutableMap.Builder<Enum<?>, Object> mapBuilder = ImmutableMap.builder();
+		mapBuilder.put(Key.WORLD, loc.getWorld().getName()).put(Key.X, loc.getBlockX()).put(Key.Y, loc.getBlockY()).put(Key.Z, loc.getBlockZ());
+		if (loc.getYaw() != 0) {
+			mapBuilder.put(Key.YAW, loc.getYaw());
+		}
+		if (loc.getPitch() != 0) {
+			mapBuilder.put(Key.PITCH, loc.getPitch());
+		}
+		return format(mapBuilder.build());
+	}
+	
+	
+	/**
+	 * @return the {@link MaterialData} that this DataEntry describes with keys {@link Key#ID} and {@link Key#DATA}.
+	 * null will be returned is there was a missing or invalid key/value pair
 	 */
 	public final MaterialData getMaterialData() {
-		Number id = getNumber(DefaultKey.ID);
-		Number data = getNumber(DefaultKey.DATA);
+		Number id = getNumber(Key.ID);
+		Number data = getNumber(Key.DATA);
 		if (id != null && data != null) {
 			return new MaterialData(id.intValue(), data.byteValue());
 		}
@@ -304,34 +322,38 @@ public class DataEntry {
 	}
 	
 	/**
-	 * @param materialData
+	 * @param materialData - The {@link MaterialData} to set and be represented by the {@link Key#ID} and {@link Key#DATA} keys.
 	 */
 	public final void setMaterialData(MaterialData materialData) {
 		if (materialData != null) {
-			setNumber(DefaultKey.ID, materialData.getItemTypeId());
-			setNumber(DefaultKey.DATA, materialData.getData());
+			setValue(Key.ID, materialData.getItemTypeId());
+			setValue(Key.DATA, materialData.getData());
 		} else {
-			values.remove(DefaultKey.ID.name());
-			values.remove(DefaultKey.DATA.name());
+			setValue(Key.ID, null);
+			setValue(Key.DATA, null);
 		}
 	}
 	
 	/**
-	 * Get the Timer object that this DataEntry represents<br />
-	 * This DataEntry must contain the key/value pairs for the {@link Keys#DURATION} key,
-	 * and either the {@link Keys#EXPIRE} key or the {@link Keys#ELAPSED} key.
+	 * @param materialData - the {@link MaterialData} to be formatted
+	 * @return the formatted String representation of the given MaterialData with the {@link Key#ID} and {@link Key#DATA} keys.
+	 */
+	public static String formatMaterialData(MaterialData materialData) {
+		return format(ImmutableMap.<Enum<?>, Object> of(Key.ID, materialData.getItemTypeId(), Key.DATA, materialData.getData()));
+	}
+	
+	
+	/**
+	 * This DataEntry must contain the key/value pairs for the {@link Key#DURATION} key,
+	 * and either the {@link Key#EXPIRE} key or the {@link Key#ELAPSED} key.
 	 * @param global - The boolean flag stating weather or not the timer is global (true) or local (false)
-	 * @return The Timer that this DataEntry describes. null will be returned if there was a missing key and value pair
+	 * @return The Timer that this DataEntry describes. null will be returned if there was a missing or invalid key/value pair
 	 */
 	public final Timer getTimer(boolean global) {
-		if (values.isEmpty()) {
-			return null;
-		}
-		Number duration = getNumber(DefaultKey.DURATION);
-		Number expire = getNumber(DefaultKey.EXPIRE);
-		Number elapsed = getNumber(DefaultKey.ELAPSED);
-		
+		Number duration = getNumber(Key.DURATION);
 		if (duration != null && duration.longValue() > 0) {
+			Number expire = getNumber(Key.EXPIRE);
+			Number elapsed = getNumber(Key.ELAPSED);
 			if (expire != null && expire.longValue() > 0) {
 				GlobalTimer globalTimer = new GlobalTimer(duration.longValue(), expire.longValue());
 				if (!global) {
@@ -350,46 +372,76 @@ public class DataEntry {
 	}
 	
 	/**
-	 * @param timer - The {@link Timer} object to set and be represented by the {@link DefaultKey#DURATION} key,
-	 * as well as the {@link DefaultKey#EXPIRE} key if the given Timer is a {@link GlobalTimer}, or
-	 * the {@link DefaultKey#ELAPSED} key if the given Timer is a {@link LocalTimer}.<br>
+	 * @param timer - The {@link Timer} object to set and be represented by the {@link Key#DURATION} key,
+	 * as well as the {@link Key#EXPIRE} key if the given Timer is a {@link GlobalTimer}, or
+	 * the {@link Key#ELAPSED} key if the given Timer is a {@link LocalTimer}.<br>
 	 * If timer is null, all of the above key/value pairs will be removed from this DataEntry.
 	 */
 	public final void setTimer(Timer timer) {
 		if (timer != null) {
 			if (timer instanceof GlobalTimer) {
-				setNumber(DefaultKey.DURATION, timer.getDuration());
-				setNumber(DefaultKey.EXPIRE, ((GlobalTimer) timer).getExpire());
+				setValue(Key.DURATION, timer.getDuration());
+				setValue(Key.EXPIRE, ((GlobalTimer) timer).getExpire());
 			} else {
-				setNumber(DefaultKey.DURATION, timer.getDuration());
-				setNumber(DefaultKey.ELAPSED, ((LocalTimer) timer).getElapsed());
+				setValue(Key.DURATION, timer.getDuration());
+				setValue(Key.ELAPSED, ((LocalTimer) timer).getElapsed());
 			}
 		} else {
-			values.remove(DefaultKey.DURATION.name());
-			values.remove(DefaultKey.EXPIRE.name());
-			values.remove(DefaultKey.ELAPSED.name());
+			setValue(Key.DURATION, null);
+			setValue(Key.EXPIRE, null);
+			setValue(Key.ELAPSED, null);
 		}
 	}
 	
 	/**
+	 * @param timer - the {@link Timer} to be formatted
+	 * @return the formatted String representation of the given Timer with the {@link Key#DURATION} key,
+	 * as well as the {@link Key#EXPIRE} key if the given Timer is a {@link GlobalTimer}, or
+	 * the {@link Key#ELAPSED} key if the given Timer is a {@link LocalTimer}
+	 */
+	public static String formatTimer(Timer timer) {
+		if (timer instanceof GlobalTimer) {
+			return format(ImmutableMap.<Enum<?>, Object> of(Key.DURATION, timer.getDuration(), Key.EXPIRE, ((GlobalTimer) timer).getExpire()));
+		}
+		return format(ImmutableMap.<Enum<?>, Object> of(Key.DURATION, timer.getDuration(), Key.ELAPSED, ((LocalTimer) timer).getElapsed()));
+	}
+	
+	
+	/**
+	 * Example DataEntry String format:<br>
+	 * <code>WORLD:Cynelia, X:-491, Y:23, Z:285, ID:68, DATA:4, DURATION:101m, PRICE:30000</code>
 	 * @return the formatted key/value pairs that this DataEntry represents in the format:<br>
 	 * <code>KEY1:some-value, KEY2:another-value, KEY3:key3-value</code><br>
-	 * Example:<br>
-	 * <code>WORLD:Cynelia, X:-491, Y:23, Z:285, ID:68, DATA:4, DURATION:101m, PRICE:30000</code>
 	 */
 	@Override
 	public final String toString() {
 		StringBuilder entry = new StringBuilder();
 		for (String key : values.keySet()) {
-			if (entry.length() > 0) {
-				entry.append(", ");
-			}
-			entry.append(key).append(":").append(values.get(key)).append(values.size());
+			format(entry, key, values.get(key));
 		}
 		return entry.toString();
 	}
 	
-	public static enum DefaultKey {
+	/**
+	 * @param values - A map containing the pairs of Enum keys to values to be formatted
+	 * @return A formatted String with the given key/value pairs as specified by {@link #toString()}
+	 */
+	public static String format(Map<Enum<?>, Object> values) {
+		StringBuilder entry = new StringBuilder();
+		for (Enum<?> key : values.keySet()) {
+			format(entry, key.name().toUpperCase(), values.get(key));
+		}
+		return entry.toString();
+	}
+	
+	private static void format(StringBuilder entry, String key, Object value) {
+		if (entry.length() > 0) {
+			entry.append(", ");
+		}
+		entry.append(key).append(":").append(value);
+	}
+	
+	public static enum Key {
 		/* Location related keys */
 		WORLD,
 		X,
@@ -405,19 +457,7 @@ public class DataEntry {
 		/* Timer related keys */
 		DURATION,
 		EXPIRE,
-		ELAPSED,
-		
-		OFFSET_X,
-		OFFSET_Y,
-		OFFSET_Z,
-		W,
-		H,
-		L,
-		
-		TYPE,
-		PRICE,
-		TEXT,
-		COLOR;
+		ELAPSED;
 	}
 	
 }

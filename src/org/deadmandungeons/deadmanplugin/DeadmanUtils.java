@@ -19,7 +19,7 @@ import org.bukkit.metadata.Metadatable;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.util.BlockIterator;
 import org.deadmandungeons.deadmanplugin.filedata.DataEntry;
-import org.deadmandungeons.deadmanplugin.filedata.DataEntry.DefaultKey;
+import org.deadmandungeons.deadmanplugin.filedata.DataEntry.Key;
 
 /**
  * Do not instantiate this class. Public constructor must be provided to be extended from each plugin
@@ -187,13 +187,12 @@ public class DeadmanUtils {
 		return sign;
 	}
 	
-	public static boolean resetSign(DataEntry dataEntry) {
-		Location loc = dataEntry.getLocation();
-		if (loc != null) {
-			Number blockId = dataEntry.getNumber(DefaultKey.ID);
-			Number blockData = dataEntry.getNumber(DefaultKey.DATA);
+	public static boolean resetBlock(Block block, DataEntry dataEntry) {
+		if (block != null && dataEntry != null) {
+			Number blockId = dataEntry.getNumber(Key.ID);
+			Number blockData = dataEntry.getNumber(Key.DATA);
 			if (blockId != null && blockData != null) {
-				return loc.getBlock().setTypeIdAndData(blockId.intValue(), blockData.byteValue(), true);
+				return block.setTypeIdAndData(blockId.intValue(), blockData.byteValue(), true);
 			}
 		}
 		return false;

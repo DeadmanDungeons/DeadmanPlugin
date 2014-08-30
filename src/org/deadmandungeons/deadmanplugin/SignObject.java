@@ -1,5 +1,6 @@
 package org.deadmandungeons.deadmanplugin;
 
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
 
 /**
@@ -9,7 +10,7 @@ public interface SignObject extends ConfigObject {
 	
 	/**
 	 * This method should be called to load any DeadmanSigns that represent this object using
-	 * the data stored in its {@link org.bukkit.configuration.ConfigurationSection ConfigurationSection}.
+	 * the data stored in its {@link ConfigurationSection ConfigurationSection}.
 	 * The signs location data should be stored in its respective SignEventListener sign Map.
 	 * @throws InvalidConfigurationException when the provided data is invalid for this type
 	 */
