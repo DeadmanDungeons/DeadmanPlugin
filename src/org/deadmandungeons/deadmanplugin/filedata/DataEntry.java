@@ -47,12 +47,14 @@ public class DataEntry {
 	 * @param entry - The raw data entry String containing the key/value pairs to include in the returned DataEntry
 	 */
 	public DataEntry(String entryStr) {
-		values = new HashMap<String, Object>();
-		Matcher valueMatcher = VALUE_PATTERN.matcher(entryStr);
-		while (valueMatcher.find()) {
-			String key = valueMatcher.group(1);
-			String value = valueMatcher.group(2);
-			values.put(key.toUpperCase(), value);
+		this();
+		if (entryStr != null) {
+			Matcher valueMatcher = VALUE_PATTERN.matcher(entryStr);
+			while (valueMatcher.find()) {
+				String key = valueMatcher.group(1);
+				String value = valueMatcher.group(2);
+				values.put(key.toUpperCase(), value);
+			}
 		}
 	}
 	
