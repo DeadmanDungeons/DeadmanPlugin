@@ -16,13 +16,14 @@ public class PluginFile {
 			+ " If you modify this file by\n hand, be aware that A SINGLE MISTYPED CHARACTER CAN CORRUPT THE FILE. If\n "
 			+ "%1$s is unable to parse the file, the plugin may BREAK!\n\n REMEMBER TO KEEP PERIODICAL BACKUPS.\n ";
 	
-	private final DeadmanPlugin plugin;
-	private final String filePath;
-	private final String defaultFilePath;
-	
 	private File configFile;
 	private FileConfiguration fileConfig;
 	private YamlConfiguration defaultConfig;
+	private int reloadCount;
+	
+	private final DeadmanPlugin plugin;
+	private final String filePath;
+	private final String defaultFilePath;
 	
 	/**
 	 * @param instance - An instance of the DeadmanPlugin this file belongs to
@@ -79,6 +80,7 @@ public class PluginFile {
 	 */
 	public void reloadConfig() {
 		fileConfig = YamlConfiguration.loadConfiguration(configFile);
+		reloadCount++;
 		
 		// Look for defaults in the jar
 		if (defaultFilePath != null) {
@@ -141,6 +143,14 @@ public class PluginFile {
 	 */
 	public void saveDefaultConfig(String defaultFilePath) {
 		saveDefaultConfig(defaultFilePath, false);
+	}
+	
+	/**
+	 * This is useful to check if the pluginFile has been reloaded and that any cached values may not be valid.
+	 * @return the amount of times this PluginFile has been reloaded.
+	 */
+	public int getReloadCount() {
+		return reloadCount;
 	}
 	
 }

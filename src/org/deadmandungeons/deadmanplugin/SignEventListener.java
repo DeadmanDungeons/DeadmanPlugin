@@ -1,11 +1,11 @@
 package org.deadmandungeons.deadmanplugin;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.block.Sign;
 import org.bukkit.event.EventHandler;
@@ -13,6 +13,9 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.metadata.FixedMetadataValue;
+
+import com.google.common.collect.ImmutableList;
 
 /**
  * This Listener class is provided to improve modularity with events relating to DeadmanSigns.
@@ -29,16 +32,22 @@ public abstract class SignEventListener<V extends SignObject, T extends DeadmanS
 	
 	private Map<Location, T> deadmanSigns = new HashMap<Location, T>();
 	
-	private List<String> signTags;
+	private final List<String> signTags;
+	private final DeadmanPlugin plugin;
+	private final int cooldown;
 	
-	public <U extends DeadmanPlugin> SignEventListener(String signTag, U plugin) {
-		signTags = new ArrayList<String>();
-		signTags.add(signTag);
-		Bukkit.getPluginManager().registerEvents(this, plugin);
+	public SignEventListener(String signTag, DeadmanPlugin plugin) {
+		this(signTag, plugin, -1);
 	}
 	
-	public <U extends DeadmanPlugin> SignEventListener(List<String> signTags, U plugin) {
+	public SignEventListener(String signTag, DeadmanPlugin plugin, int cooldown) {
+		this(ImmutableList.of(signTag), plugin, cooldown);
+	}
+	
+	public SignEventListener(List<String> signTags, DeadmanPlugin plugin, int cooldown) {
 		this.signTags = signTags;
+		this.plugin = plugin;
+		this.cooldown = cooldown;
 		Bukkit.getPluginManager().registerEvents(this, plugin);
 	}
 	
@@ -63,6 +72,22 @@ public abstract class SignEventListener<V extends SignObject, T extends DeadmanS
 		if (event.getClickedBlock() != null) {
 			T deadmanSign = deadmanSigns.get(event.getClickedBlock().getLocation());
 			if (deadmanSign != null) {
+				//Handle sign cooldown
+				if (cooldown > 0 && !event.getPlayer().isOp()) {
+					String metadataKey = plugin.getName() + "-sign-cooldown";
+					Long timestamp = DeadmanUtils.getMetadata(plugin, event.getPlayer(), metadataKey, Long.class);
+					if (timestamp != null) {
+						long timeLeft = ((timestamp) + (cooldown * 1000)) - System.currentTimeMillis();
+						if (timeLeft > 0) {
+							int secondsLeft = (int) Math.ceil(timeLeft / 1000);
+							event.getPlayer().sendMessage(ChatColor.RED + "You can click this sign in " + secondsLeft + " seconds");
+							return;
+						}
+					}
+					
+					event.getPlayer().setMetadata(metadataKey, new FixedMetadataValue(plugin, System.currentTimeMillis()));
+				}
+				
 				onSignClick(event, deadmanSign);
 			}
 		}

@@ -11,6 +11,7 @@ import java.util.regex.Pattern;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Sound;
+import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginDescriptionFile;
@@ -19,7 +20,6 @@ import org.deadmandungeons.deadmanplugin.command.DeadmanExecutor;
 import org.deadmandungeons.deadmanplugin.command.DeadmanExecutor.CommandWrapper;
 import org.deadmandungeons.deadmanplugin.command.SubCommandInfo;
 
-//TODO maybe make the implementing Plugin specify the main command
 /**
  * A Messaging utility class that makes messaging Players with configured messages easy.
  * All messages will be injected with appropriate configured colors, and variables.
@@ -38,7 +38,6 @@ public class Messenger {
 	
 	private Map<String, String> cachedMessages = new HashMap<String, String>();
 	
-	private String mainCmd;
 	private ChatColor primaryColor;
 	private ChatColor secondaryColor;
 	private ChatColor tertiaryColor;
@@ -124,19 +123,19 @@ public class Messenger {
 	 * @param info - The CommandInfo that should be sent as the Command name, usage, and description
 	 * @param sender - The Command Sender to send the command info to
 	 */
-	public void sendCommandInfo(CommandInfo info, CommandSender sender) {
+	public void sendCommandInfo(Command bukkitCmd, CommandInfo info, CommandSender sender) {
 		sender.sendMessage(ChatColor.BOLD + "" + getPrimaryColor() + info.name() + " Command");
-		sendCommandUsage(info, sender);
+		sendCommandUsage(bukkitCmd, info, sender);
 	}
 	
 	/**
 	 * @param info - The CommandInfo that should be sent as the Command usage and description
 	 * @param sender - The Command Sender to send the command info to
 	 */
-	public void sendCommandUsage(CommandInfo info, CommandSender sender) {
+	public void sendCommandUsage(Command bukkitCmd, CommandInfo info, CommandSender sender) {
 		SubCommandInfo[] commands = info.subCommands();
 		if (commands.length == 0) {
-			sender.sendMessage(getSecondaryColor() + "  /" + getMainCmd() + " " + info.name());
+			sender.sendMessage(getSecondaryColor() + "  /" + bukkitCmd.getName() + " " + info.name());
 		}
 		if (info.description() != null && !info.description().trim().isEmpty()) {
 			sender.sendMessage(getTertiaryColor() + "    - " + info.description());
@@ -147,7 +146,7 @@ public class Messenger {
 				for (int i = 0; i < cmdInfo.arguments().length; i++) {
 					arguments += (i > 0 ? " " : "") + cmdInfo.arguments()[i].argName();
 				}
-				sender.sendMessage(getSecondaryColor() + "  /" + getMainCmd() + " " + info.name() + " " + arguments);
+				sender.sendMessage(getSecondaryColor() + "  /" + bukkitCmd.getName() + " " + info.name() + " " + arguments);
 				if (cmdInfo.description() != null && !cmdInfo.description().trim().isEmpty()) {
 					sender.sendMessage(getTertiaryColor() + "    - " + cmdInfo.description());
 				}
@@ -162,7 +161,7 @@ public class Messenger {
 	 * @param commandMap - A Map containing all of the registered commands to be sent to the CommandSender
 	 * @param pageNum - The number of the page to send. Each page lists 5 commands
 	 */
-	public void sendHelpInfo(CommandSender sender, Map<Class<?>, CommandWrapper<?>> commandMap, int pageNum) {
+	public void sendHelpInfo(Command bukkitCmd, CommandSender sender, Map<Class<?>, CommandWrapper<?>> commandMap, int pageNum) {
 		List<CommandInfo> cmdInfos = new ArrayList<CommandInfo>();
 		for (CommandWrapper<?> cmdWrapper : commandMap.values()) {
 			if (DeadmanExecutor.hasCommandPerm(sender, cmdWrapper.getInfo().permissions())) {
@@ -194,7 +193,7 @@ public class Messenger {
 		sender.sendMessage(getSecondaryColor() + "KEY: " + getTertiaryColor() + "'non-variable' '<variable>' '[optional-variable]'");
 		for (int i = 0; i < infos.length && i < (pageNum * 5); i++) {
 			if (i >= (pageNum - 1) * 5) {
-				sendCommandInfo(infos[i], sender);
+				sendCommandInfo(bukkitCmd, infos[i], sender);
 				if (i + 1 != infos.length && i + 1 != pageNum * 5) {
 					sender.sendMessage("");
 				}
@@ -207,15 +206,13 @@ public class Messenger {
 	/**
 	 * @param sender - The CommandSender to send this plugin's information to
 	 */
-	public void sendPluginInfo(CommandSender sender) {
+	public void sendPluginInfo(Command bukkitCmd, CommandSender sender) {
 		PluginDescriptionFile pdf = plugin.getDescription();
 		sender.sendMessage(getSecondaryColor() + pdf.getName() + " Version: " + getPrimaryColor() + pdf.getVersion());
 		String authors = formatList(pdf.getAuthors());
 		sender.sendMessage(getSecondaryColor() + "Created By: " + getPrimaryColor() + authors);
 		sender.sendMessage(getSecondaryColor() + "Contact at: " + getPrimaryColor() + pdf.getWebsite());
-		if (getMainCmd() != null) {
-			sender.sendMessage(getSecondaryColor() + "Type '/" + getMainCmd() + " help' for a list of commands you can use");
-		}
+		sender.sendMessage(getSecondaryColor() + "Type '/" + bukkitCmd.getName() + " help' for a list of commands you can use");
 	}
 	
 	/**
@@ -332,22 +329,6 @@ public class Messenger {
 			plugin.getLogger().log(Level.SEVERE, "Failed to retrieve message '" + path + "' from lang file!");
 		}
 		return rawMessage;
-	}
-	
-	private String getMainCmd() {
-		if (mainCmd == null) {
-			PluginDescriptionFile pdf = plugin.getDescription();
-			if (!pdf.getCommands().isEmpty()) {
-				for (String cmd : pdf.getCommands().keySet()) {
-					String description = (String) pdf.getCommands().get(cmd).get("description");
-					if (description != null && description.contains(pdf.getName() + " command prefix")) {
-						mainCmd = cmd;
-						break;
-					}
-				}
-			}
-		}
-		return mainCmd;
 	}
 	
 }

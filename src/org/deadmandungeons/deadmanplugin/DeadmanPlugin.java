@@ -9,9 +9,11 @@ import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.permission.Permission;
 
 import org.apache.commons.lang.Validate;
+import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.deadmandungeons.deadmanplugin.command.DeadmanExecutor;
 import org.deadmandungeons.deadmanplugin.filedata.PluginFile;
 
 import com.google.common.collect.ImmutableMap;
@@ -45,7 +47,7 @@ public abstract class DeadmanPlugin extends JavaPlugin {
 	 * This would only happen if something other than the Craftbukkit classloader tried
 	 * to create a new instance of the plugin.
 	 */
-	public DeadmanPlugin() throws IllegalStateException {
+	protected DeadmanPlugin() throws IllegalStateException {
 		if (plugins.containsKey(getClass())) {
 			String msg = "The " + getName() + " DeadmanPlugin has already been initialized and cannot be initialized again";
 			throw new IllegalStateException(msg);
@@ -56,6 +58,7 @@ public abstract class DeadmanPlugin extends JavaPlugin {
 		messenger = new Messenger(this);
 	}
 	
+
 	/**
 	 * @return an ImmutableMap of all the currently instantiated DeadmanPlugins
 	 * with the plugin Class as the Key, and the DeadmanPlugin instance as the value
