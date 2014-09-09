@@ -14,6 +14,7 @@ import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.material.MaterialData;
 import org.bukkit.metadata.MetadataValue;
 import org.bukkit.metadata.Metadatable;
 import org.bukkit.plugin.Plugin;
@@ -177,11 +178,21 @@ public class DeadmanUtils {
 		return false;
 	}
 	
-	public static Sign getSignState(final Block block) {
+	public static Sign getSignState(Block block) {
+		return getSignState(block, null);
+	}
+	
+	public static Sign getSignState(Block block, MaterialData data) {
 		Sign sign = null;
 		if (block != null) {
 			if (block.getType().equals(Material.SIGN_POST) || block.getType().equals(Material.WALL_SIGN)) {
 				sign = (Sign) block.getState();
+			}
+			if (sign == null && data != null) {
+				boolean success = block.setTypeIdAndData(data.getItemTypeId(), data.getData(), true);
+				if (success && (block.getType().equals(Material.SIGN_POST) || block.getType().equals(Material.WALL_SIGN))) {
+					sign = (Sign) block.getState();
+				}
 			}
 		}
 		return sign;

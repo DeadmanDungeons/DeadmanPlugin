@@ -10,7 +10,9 @@ import org.apache.commons.lang.math.NumberUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.block.Sign;
 import org.bukkit.material.MaterialData;
+import org.deadmandungeons.deadmanplugin.DeadmanUtils;
 import org.deadmandungeons.deadmanplugin.timer.GlobalTimer;
 import org.deadmandungeons.deadmanplugin.timer.LocalTimer;
 import org.deadmandungeons.deadmanplugin.timer.Timer;
@@ -406,6 +408,27 @@ public class DataEntry {
 			return format(ImmutableMap.<Enum<?>, Object> of(Key.DURATION, timer.getDuration(), Key.EXPIRE, ((GlobalTimer) timer).getExpire()));
 		}
 		return format(ImmutableMap.<Enum<?>, Object> of(Key.DURATION, timer.getDuration(), Key.ELAPSED, ((LocalTimer) timer).getElapsed()));
+	}
+	
+	
+	/**
+	 * Null will be returned if:
+	 * <ul>
+	 * <li>{@link #getLocation()} returns null</li>
+	 * <li>There was no Sign block at the location and force was false</li>
+	 * <li>There was no Sign block at the location and {@link #getMaterialData()} returned null</li>
+	 * <li>There was still no Sign block at the location even after forcing the block materialData</li>
+	 * </ul>
+	 * @param force - The ID and data for the block at the location returned by {@link #getLocation()} will
+	 * be set to the values as defined by {@link #getMaterialData()} if the block is not a Sign block
+	 * @return the {@link Sign} at the location this DataEntry describes
+	 */
+	public Sign getSign(boolean force) {
+		Location signLoc = getLocation();
+		if (signLoc != null) {
+			return DeadmanUtils.getSignState(signLoc.getBlock(), (force ? getMaterialData() : null));
+		}
+		return null;
 	}
 	
 	

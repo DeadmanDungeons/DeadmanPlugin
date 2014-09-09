@@ -9,11 +9,9 @@ import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.permission.Permission;
 
 import org.apache.commons.lang.Validate;
-import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.deadmandungeons.deadmanplugin.command.DeadmanExecutor;
 import org.deadmandungeons.deadmanplugin.filedata.PluginFile;
 
 import com.google.common.collect.ImmutableMap;
@@ -58,7 +56,7 @@ public abstract class DeadmanPlugin extends JavaPlugin {
 		messenger = new Messenger(this);
 	}
 	
-
+	
 	/**
 	 * @return an ImmutableMap of all the currently instantiated DeadmanPlugins
 	 * with the plugin Class as the Key, and the DeadmanPlugin instance as the value
