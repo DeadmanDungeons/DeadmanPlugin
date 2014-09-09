@@ -32,15 +32,15 @@ public abstract class DeadmanSign<T extends SignObject> {
 	private static final String INVALID_SIGN_ENTRY = "The sign entry '%s' in the %2$s data list at path '%s.%2$s' is invalid! This entry will be removed from file.";
 	
 	// This is the most ridiculous Generic use ever
-	private static final Map<Class<? extends DeadmanSign<?>>, SignEventListener<? extends SignObject, ? extends DeadmanSign<?>>> listeners = new HashMap<Class<? extends DeadmanSign<?>>, SignEventListener<? extends SignObject, ? extends DeadmanSign<?>>>();
+	private static final Map<Class<? extends DeadmanSign<?>>, DeadmanSignHandler<? extends SignObject, ? extends DeadmanSign<?>>> handlers = new HashMap<Class<? extends DeadmanSign<?>>, DeadmanSignHandler<? extends SignObject, ? extends DeadmanSign<?>>>();
 	
 	private final Sign sign;
 	private final DataEntry dataEntry;
 	private final T signObject;
 	
 	public DeadmanSign(Sign sign, DataEntry dataEntry, T signObject) {
-		if (!listeners.containsKey(getClass())) {
-			throw new IllegalStateException("A SignEventListener has not been set for the " + getClass().getCanonicalName());
+		if (!handlers.containsKey(getClass())) {
+			throw new IllegalStateException("A DeadmanSignHandler has not been set for the " + getClass().getCanonicalName());
 		}
 		Validate.notNull(sign, "sign cannot be null");
 		Validate.notNull(dataEntry, "dataEntry cannot be null");
@@ -108,32 +108,32 @@ public abstract class DeadmanSign<T extends SignObject> {
 	}
 	
 	/**
-	 * This will unregister the events of any {@link SignEventListener} that was previously set for the
-	 * given {@link DeadmanSign} class if any, and register the events of the given SignEventListener
-	 * @param signClass - The class of the DeadmanSign the SignEventListener is for
-	 * @param listener - The instance of the SignEventListener to set as the listener for all stored instances of the given DeadmanSign type
+	 * This will unregister the events of any {@link DeadmanSignHandler} that was previously set for the
+	 * given {@link DeadmanSign} class if any, and register the events of the given DeadmanSignHandler
+	 * @param signClass - The class of the DeadmanSign the DeadmanSignHandler is for
+	 * @param handler - The instance of the DeadmanSignHandler to set as the handler for all stored instances of the given DeadmanSign type
 	 */
-	public static <V extends SignObject, T extends DeadmanSign<V>> void setListener(Class<T> signClass, SignEventListener<V, T> listener) {
+	public static <V extends SignObject, T extends DeadmanSign<V>> void setHandler(Class<T> signClass, DeadmanSignHandler<V, T> handler) {
 		Validate.notNull(signClass, "signClass cannot be null");
-		Validate.notNull(listener, "listener cannot be null");
+		Validate.notNull(handler, "handler cannot be null");
 		
-		SignEventListener<V, T> previous = getListener(signClass);
+		DeadmanSignHandler<V, T> previous = getHandler(signClass);
 		if (previous != null) {
 			HandlerList.unregisterAll(previous);
 		}
-		Bukkit.getPluginManager().registerEvents(listener, listener.getPlugin());
-		listeners.put(signClass, listener);
+		Bukkit.getPluginManager().registerEvents(handler, handler.getPlugin());
+		handlers.put(signClass, handler);
 	}
 	
 	/**
-	 * @param signClass - The class of the {@link DeadmanSign} the desired {@link SignEventListener} is for
-	 * @return the SignEventListener instance that was set for the given DeadmanSign class or null no SignEventListener was set
+	 * @param signClass - The class of the {@link DeadmanSign} the desired {@link DeadmanSignHandler} is for
+	 * @return the DeadmanSignHandler instance that was set for the given DeadmanSign class or null no DeadmanSignHandler was set
 	 */
-	public static <V extends SignObject, T extends DeadmanSign<V>> SignEventListener<V, T> getListener(Class<T> signClass) {
+	public static <V extends SignObject, T extends DeadmanSign<V>> DeadmanSignHandler<V, T> getHandler(Class<T> signClass) {
 		Validate.notNull(signClass, "signClass cannot be null");
 		@SuppressWarnings("unchecked")
-		SignEventListener<V, T> listener = (SignEventListener<V, T>) listeners.get(signClass);
-		return listener;
+		DeadmanSignHandler<V, T> handler = (DeadmanSignHandler<V, T>) handlers.get(signClass);
+		return handler;
 	}
 	
 	
@@ -141,14 +141,15 @@ public abstract class DeadmanSign<T extends SignObject> {
 	 * This Listener class is provided to improve modularity with events relating to DeadmanSigns.
 	 * Extend this class for each {@link DeadmanSign} of type T that represents a {@link SignObject} of type V.<br />
 	 * Construct this object for each DeadmanSign type that the plugin will be listening to.
-	 * There is no need to register this listener because it will register itself upon construction.
+	 * Call {@link DeadmanSign#setHandler(Class, DeadmanSignHandler)} to register the Sign events and
+	 * bind a handler to the DeadmanSign of type T.<br>
 	 * All DeadmanSigns of type T that are created should be stored in this class's deadmanSigns HashMap
 	 * using {@link #getDeadmanSigns()}
 	 * @param <V> - The {@link SignObject} that the signs of type T represent
 	 * @param <T> - The {@link DeadmanSign} involved in the sign events
 	 * @author Jon
 	 */
-	public static abstract class SignEventListener<V extends SignObject, T extends DeadmanSign<V>> implements Listener {
+	public static abstract class DeadmanSignHandler<V extends SignObject, T extends DeadmanSign<V>> implements Listener {
 		
 		private Map<Location, T> deadmanSigns = new HashMap<Location, T>();
 		
@@ -156,22 +157,22 @@ public abstract class DeadmanSign<T extends SignObject> {
 		private final DeadmanPlugin plugin;
 		private final int cooldown;
 		
-		public SignEventListener(String signTag, DeadmanPlugin plugin) {
+		public DeadmanSignHandler(String signTag, DeadmanPlugin plugin) {
 			this(signTag, plugin, -1);
 		}
 		
-		public SignEventListener(String signTag, DeadmanPlugin plugin, int cooldown) {
+		public DeadmanSignHandler(String signTag, DeadmanPlugin plugin, int cooldown) {
 			this(ImmutableList.of(signTag), plugin, cooldown);
 		}
 		
-		public SignEventListener(List<String> signTags, DeadmanPlugin plugin, int cooldown) {
+		public DeadmanSignHandler(List<String> signTags, DeadmanPlugin plugin, int cooldown) {
 			this.signTags = signTags;
 			this.plugin = plugin;
 			this.cooldown = cooldown;
 		}
 		
 		/**
-		 * @return the {@link DeadmanPlugin} this SignEventListener is for
+		 * @return the {@link DeadmanPlugin} this DeadmanSignHandler is for
 		 */
 		public final DeadmanPlugin getPlugin() {
 			return plugin;

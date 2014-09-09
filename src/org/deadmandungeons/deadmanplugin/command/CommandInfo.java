@@ -16,7 +16,7 @@ import java.lang.annotation.Target;
 public @interface CommandInfo {
 	
 	/**
-	 * The actual name of the command. Not really used anywhere.
+	 * The actual name of the command.
 	 */
 	public String name();
 	

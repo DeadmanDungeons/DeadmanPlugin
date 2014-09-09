@@ -227,12 +227,9 @@ public class DataEntry {
 	public final World getWorld() {
 		Object value = getValue(Key.WORLD);
 		if (value != null) {
-			if (value instanceof World) {
-				return (World) value;
-			}
 			World world = Bukkit.getWorld(value.toString());
 			if (world != null) {
-				setValue(Key.WORLD, world);
+				setValue(Key.WORLD, world.getName());
 			}
 			return world;
 		}
@@ -244,7 +241,7 @@ public class DataEntry {
 	 * If world is null, the World key/value pair will be removed from this DataEntry.
 	 */
 	public final void setWorld(World world) {
-		setValue(Key.WORLD, world);
+		setValue(Key.WORLD, world.getName());
 	}
 	
 	/**
