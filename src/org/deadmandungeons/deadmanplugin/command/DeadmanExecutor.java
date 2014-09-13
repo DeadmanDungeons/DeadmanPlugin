@@ -50,6 +50,9 @@ public class DeadmanExecutor implements CommandExecutor {
 	}
 	
 	public DeadmanExecutor(DeadmanPlugin plugin, String baseCmd, int coolDown) {
+		if (plugin.isJavaPluginLoaded()) {
+			throw new IllegalStateException("This plugin has not been loaded yet! Cannot construct DeadmanExecutor before plugin is loaded");
+		}
 		Validate.notNull(plugin, "plugin cannot be null");
 		Validate.notNull(baseCmd, "baseCmd cannot be null");
 		this.plugin = plugin;

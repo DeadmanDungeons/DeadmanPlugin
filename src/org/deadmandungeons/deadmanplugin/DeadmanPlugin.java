@@ -168,7 +168,7 @@ public abstract class DeadmanPlugin extends JavaPlugin {
 	/**
 	 * @return the {@link Messenger} for this DeadmanPlugin
 	 */
-	public final Messenger getMessenger() {
+	public Messenger getMessenger() {
 		return messenger;
 	}
 	
