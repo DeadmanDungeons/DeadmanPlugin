@@ -9,6 +9,7 @@ import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.permission.Permission;
 
 import org.apache.commons.lang.Validate;
+import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -50,7 +51,7 @@ public abstract class DeadmanPlugin extends JavaPlugin {
 			String msg = "The " + getName() + " DeadmanPlugin has already been initialized and cannot be initialized again";
 			throw new IllegalStateException(msg);
 		}
-		getLogger().info("Initialized DeadmanPlugin: " + getName());
+		Bukkit.getLogger().info("Initialized DeadmanPlugin: " + getName());
 		plugins.put(getClass(), this);
 		
 		messenger = new Messenger(this);

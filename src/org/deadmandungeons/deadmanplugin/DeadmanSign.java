@@ -157,15 +157,15 @@ public abstract class DeadmanSign<T extends SignObject> {
 		private final DeadmanPlugin plugin;
 		private final int cooldown;
 		
-		public DeadmanSignHandler(String signTag, DeadmanPlugin plugin) {
-			this(signTag, plugin, -1);
+		public DeadmanSignHandler(DeadmanPlugin plugin, String signTag) {
+			this(plugin, signTag, -1);
 		}
 		
-		public DeadmanSignHandler(String signTag, DeadmanPlugin plugin, int cooldown) {
-			this(ImmutableList.of(signTag), plugin, cooldown);
+		public DeadmanSignHandler(DeadmanPlugin plugin, String signTag, int cooldown) {
+			this(plugin, ImmutableList.of(signTag), cooldown);
 		}
 		
-		public DeadmanSignHandler(List<String> signTags, DeadmanPlugin plugin, int cooldown) {
+		public DeadmanSignHandler(DeadmanPlugin plugin, List<String> signTags, int cooldown) {
 			this.signTags = signTags;
 			this.plugin = plugin;
 			this.cooldown = cooldown;

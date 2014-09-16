@@ -28,7 +28,7 @@ import org.deadmandungeons.deadmanplugin.command.SubCommandInfo;
 public class Messenger {
 	
 	// The Regex to find any variables in the language file
-	private static final String VARIABLE_REGEX = "(?<!\\\\)<[^>]+>";
+	private static final String VARIABLE_REGEX = "(?<!\\\\)<[^>]+[^\\\\]>";
 	private static final Pattern VARIABLE_PATTERN = Pattern.compile(VARIABLE_REGEX);
 	// The Regex to find any formatting codes in a message
 	private static final String FORMATTING_REGEX = "&[\\da-fk-or]";
@@ -58,15 +58,22 @@ public class Messenger {
 	public String getMessage(String path, boolean colorCode, Object... vars) {
 		String message = getRawMessage(path);
 		if (message != null && message.length() > 0) {
+			boolean autoColor = false;
 			if (colorCode) {
-				message = injectColors(message);
+				if (FORMAT_PATTERN.matcher(message).find()) {
+					message = injectColors(message);
+				} else {
+					message = getSecondaryColor() + message;
+					autoColor = true;
+				}
 			} else {
 				message = message.replaceAll(FORMATTING_REGEX, "");
 			}
 			if (vars.length > 0) {
 				Matcher matcher = VARIABLE_PATTERN.matcher(message);
 				for (int i = 0; i < vars.length && matcher.find(); i++) {
-					message = message.replace(matcher.group(), vars[i].toString());
+					String value = (autoColor ? getPrimaryColor() + vars[i].toString() + getSecondaryColor() : vars[i].toString());
+					message = message.replace(matcher.group(), value);
 				}
 			}
 			return message.replace("\\<", "<").replace("\\>", ">");
