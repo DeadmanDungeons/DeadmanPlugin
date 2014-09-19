@@ -34,30 +34,29 @@ public class DeadmanExecutor implements CommandExecutor {
 	private static final String NOT_DURATION = "The time duration match the format of #m:#h:#d and cannot be equal to zero minutes";
 	private static final String NOT_BOOLEAN = "'%s' is not a boolean. Argument must be either 'true' or 'false'";
 	
-	private Map<Class<?>, CommandWrapper<?>> commands = new LinkedHashMap<Class<?>, CommandWrapper<?>>();
-	private Map<String, PseudoCommand> pseudoCommands = new HashMap<String, PseudoCommand>();
-	private Map<String, String> helpInfo = new HashMap<String, String>();
+	private final Map<Class<?>, CommandWrapper<?>> commands = new LinkedHashMap<Class<?>, CommandWrapper<?>>();
+	private final Map<String, PseudoCommand> pseudoCommands = new HashMap<String, PseudoCommand>();
+	private final Map<String, String> helpInfo = new HashMap<String, String>();
+	private final Map<Class<?>, ArgumentConverter<?>> converters = new HashMap<Class<?>, ArgumentConverter<?>>();
 	
-	private Map<Class<?>, ArgumentConverter<?>> converters = new HashMap<Class<?>, ArgumentConverter<?>>();
-	
-	private DeadmanPlugin plugin;
+	private final DeadmanPlugin plugin;
 	private final PluginCommand bukkitCmd;
-	private int coolDown;
+	private final Integer coolDown;
 	
 	public DeadmanExecutor(DeadmanPlugin plugin, String baseCmd) {
-		this(plugin, baseCmd, -1);
+		this(plugin, baseCmd, null);
 	}
 	
-	public DeadmanExecutor(DeadmanPlugin plugin, String baseCmd, int coolDown) {
+	public DeadmanExecutor(DeadmanPlugin plugin, String baseCmd, Integer coolDown) {
 		if (!plugin.isJavaPluginLoaded()) {
 			throw new IllegalStateException("This plugin has not been loaded yet! Cannot construct DeadmanExecutor before plugin is loaded");
 		}
 		Validate.notNull(plugin, "plugin cannot be null");
 		Validate.notNull(baseCmd, "baseCmd cannot be null");
+		Validate.notNull(this.bukkitCmd = plugin.getCommand(baseCmd), "There is no configured command for the string '" + baseCmd + "'");
+		
 		this.plugin = plugin;
-		this.bukkitCmd = plugin.getCommand(baseCmd);
-		this.coolDown = coolDown;
-		Validate.notNull(bukkitCmd, "There is no configured command for the string '" + baseCmd + "'");
+		this.coolDown = (coolDown != null && coolDown < 1 ? null : coolDown);
 		bukkitCmd.setExecutor(this);
 		
 		/*
@@ -102,6 +101,14 @@ public class DeadmanExecutor implements CommandExecutor {
 		});
 	}
 	
+	public final PluginCommand getBukkitCmd() {
+		return bukkitCmd;
+	}
+	
+	public final Integer getCoolDown() {
+		return coolDown;
+	}
+	
 	@Override
 	public final boolean onCommand(CommandSender sender, org.bukkit.command.Command bukkitCmd, String label, String[] args) {
 		if (args.length == 0) {
@@ -130,7 +137,7 @@ public class DeadmanExecutor implements CommandExecutor {
 			}
 		}
 		
-		if (coolDown > 0 && sender instanceof Player && !((Player) sender).isOp()) {
+		if (coolDown != null && sender instanceof Player && !((Player) sender).isOp()) {
 			Player player = (Player) sender;
 			String metadataKey = plugin.getName() + "-cmd-cooldown";
 			Long timestamp = DeadmanUtils.getMetadata(plugin, player, metadataKey, Long.class);
