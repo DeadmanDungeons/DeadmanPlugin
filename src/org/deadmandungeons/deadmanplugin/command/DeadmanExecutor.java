@@ -22,7 +22,7 @@ import org.deadmandungeons.deadmanplugin.command.Arguments.SubCommand;
 //TODO use Messenger but check if message exists and fallback on hardcoded messages
 /**
  * The base CommandExecutor for Deadman plugins.<br />
- * When inherited, any {@link Command}, {@link PseudoCommand}, {@link ArgumentConverter}, and HelpInfo need to be registered using the
+ * Any {@link Command}, {@link PseudoCommand}, {@link ArgumentConverter}, and HelpInfo need to be registered using the
  * respective register method. A default converter is already created for arguments of type: Integer, ChatColor, Long, and Boolean.
  * These can be overridden by supplying your own ArgumentConverter for that type
  * @author Jon
@@ -53,7 +53,7 @@ public class DeadmanExecutor implements CommandExecutor {
 		}
 		Validate.notNull(plugin, "plugin cannot be null");
 		Validate.notNull(baseCmd, "baseCmd cannot be null");
-		Validate.notNull(this.bukkitCmd = plugin.getCommand(baseCmd), "There is no configured command for the string '" + baseCmd + "'");
+		Validate.notNull(bukkitCmd = plugin.getCommand(baseCmd), "There is no configured command for the string '" + baseCmd + "'");
 		
 		this.plugin = plugin;
 		this.coolDown = (coolDown != null && coolDown < 1 ? null : coolDown);
@@ -69,7 +69,7 @@ public class DeadmanExecutor implements CommandExecutor {
 			@Override
 			public Result<Integer> convertCommandArg(String argName, String arg) {
 				Integer num = (DeadmanUtils.isInteger(arg) ? Integer.parseInt(arg) : null);
-				return num != null ? new Result<Integer>(num, null) : new Result<Integer>(null, String.format(NOT_INT, arg));
+				return num != null ? new Result<Integer>(num) : new Result<Integer>(String.format(NOT_INT, arg));
 			}
 		});
 		registerConverter(ChatColor.class, new ArgumentConverter<ChatColor>() {
@@ -77,7 +77,7 @@ public class DeadmanExecutor implements CommandExecutor {
 			@Override
 			public Result<ChatColor> convertCommandArg(String argName, String arg) {
 				ChatColor color = DeadmanUtils.getChatColor(arg.toUpperCase());
-				return new Result<ChatColor>(color, (color == null ? String.format(NOT_CHATCOLOR, arg) : null));
+				return color != null ? new Result<ChatColor>(color) : new Result<ChatColor>(String.format(NOT_CHATCOLOR, arg));
 			}
 		});
 		registerConverter(Long.class, new ArgumentConverter<Long>() {
@@ -85,10 +85,7 @@ public class DeadmanExecutor implements CommandExecutor {
 			@Override
 			public Result<Long> convertCommandArg(String argName, String arg) {
 				Long duration = DeadmanUtils.getDuration(arg);
-				if (duration == 0) {
-					duration = null;
-				}
-				return new Result<Long>(duration, (duration == null ? NOT_DURATION : null));
+				return duration > 0 ? new Result<Long>(duration) : new Result<Long>(NOT_DURATION);
 			}
 		});
 		registerConverter(Boolean.class, new ArgumentConverter<Boolean>() {
@@ -96,7 +93,7 @@ public class DeadmanExecutor implements CommandExecutor {
 			@Override
 			public Result<Boolean> convertCommandArg(String argName, String arg) {
 				Boolean bool = (arg.equalsIgnoreCase("true") || arg.equalsIgnoreCase("false") ? Boolean.parseBoolean(arg) : null);
-				return new Result<Boolean>(bool, (bool == null ? String.format(NOT_BOOLEAN, arg) : null));
+				return bool != null ? new Result<Boolean>(bool) : new Result<Boolean>(String.format(NOT_BOOLEAN, arg));
 			}
 		});
 	}
@@ -174,7 +171,7 @@ public class DeadmanExecutor implements CommandExecutor {
 		}
 		
 		String[] params = Arrays.copyOfRange(args, 1, args.length);
-		SubCommand subCmd = new Arguments.Matcher(this).forCommand(cmdWrapper).withStringArgs(params).findMatch();
+		SubCommand subCmd = Arguments.matcher(this).forCommand(cmdWrapper).withStringArgs(params).findMatch();
 		if (subCmd == null) {
 			plugin.getMessenger().sendMessage(sender, "failed.invalid-args-alt");
 			plugin.getMessenger().sendCommandUsage(bukkitCmd, cmdWrapper.info, sender);
@@ -191,9 +188,9 @@ public class DeadmanExecutor implements CommandExecutor {
 			}
 		}
 		
-		Result<Arguments> conversionResult = new Arguments.Converter().forSubCommand(subCmd).convert();
-		if (conversionResult.getErrorMessge() != null) {
-			sender.sendMessage(ChatColor.RED + conversionResult.getErrorMessge());
+		Result<Arguments> conversionResult = subCmd.convert();
+		if (conversionResult.isError()) {
+			sender.sendMessage(ChatColor.RED + conversionResult.getErrorMessage());
 			return false;
 		}
 		

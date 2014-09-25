@@ -16,8 +16,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.deadmandungeons.deadmanplugin.filedata.PluginFile;
 
 import com.google.common.collect.ImmutableMap;
-import com.sk89q.worldedit.bukkit.WorldEditPlugin;
-import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
 
 /**
  * The base abstract class to be extended by the main class for all Deadman plugins.
@@ -35,8 +33,6 @@ public abstract class DeadmanPlugin extends JavaPlugin {
 	
 	private Economy economy;
 	private Permission permissions;
-	private WorldGuardPlugin worldGuard;
-	private WorldEditPlugin worldEdit;
 	
 	private boolean loaded;
 	
@@ -107,47 +103,39 @@ public abstract class DeadmanPlugin extends JavaPlugin {
 	public abstract PluginFile getLangFile();
 	
 	public final boolean setupEconomy() {
-		if (!getServer().getPluginManager().isPluginEnabled("Vault")) {
-			getLogger().log(Level.SEVERE, "Vault is not enabled on this server and is a required dependendy!");
-			return false;
-		}
-		RegisteredServiceProvider<Economy> economyProvider = getServer().getServicesManager().getRegistration(Economy.class);
-		if (economyProvider != null) {
-			economy = economyProvider.getProvider();
+		if (economy == null) {
+			if (!getServer().getPluginManager().isPluginEnabled("Vault")) {
+				getLogger().log(Level.SEVERE, "Vault is not enabled on this server and is a required dependendy!");
+				return false;
+			}
+			RegisteredServiceProvider<Economy> economyProvider = getServer().getServicesManager().getRegistration(Economy.class);
+			if (economyProvider != null) {
+				economy = economyProvider.getProvider();
+			}
 		}
 		return (economy != null);
 	}
 	
 	public final boolean setupPermissions() {
-		if (!getServer().getPluginManager().isPluginEnabled("Vault")) {
-			getLogger().log(Level.SEVERE, "Vault is not enabled on this server and is a required dependendy!");
-			return false;
-		}
-		RegisteredServiceProvider<Permission> permissionProvider = getServer().getServicesManager().getRegistration(Permission.class);
-		if (permissionProvider != null) {
-			permissions = permissionProvider.getProvider();
+		if (permissions == null) {
+			if (!getServer().getPluginManager().isPluginEnabled("Vault")) {
+				getLogger().log(Level.SEVERE, "Vault is not enabled on this server and is a required dependendy!");
+				return false;
+			}
+			RegisteredServiceProvider<Permission> permissionProvider = getServer().getServicesManager().getRegistration(Permission.class);
+			if (permissionProvider != null) {
+				permissions = permissionProvider.getProvider();
+			}
 		}
 		return (permissions != null);
 	}
 	
-	public final boolean setupWorldGuard() {
-		Plugin plugin = getServer().getPluginManager().getPlugin("WorldGuard");
-		if (plugin == null || !(plugin instanceof WorldGuardPlugin)) {
-			getLogger().log(Level.SEVERE, "WorldGuard is not enabled on this server and is a required dependendy!");
-			return false;
+	public final <T extends Plugin> T getPluginDependency(String pluginName, Class<T> pluginType) {
+		Plugin plugin = getServer().getPluginManager().getPlugin(pluginName);
+		if (plugin != null && pluginType.isInstance(plugin)) {
+			return pluginType.cast(plugin);
 		}
-		worldGuard = (WorldGuardPlugin) plugin;
-		return true;
-	}
-	
-	public final boolean setupWorldEdit() {
-		Plugin plugin = getServer().getPluginManager().getPlugin("WorldEdit");
-		if (plugin == null || !(plugin instanceof WorldEditPlugin)) {
-			getLogger().log(Level.SEVERE, "WorldEdit is not enabled on this server and is a required dependendy!");
-			return false;
-		}
-		worldEdit = (WorldEditPlugin) plugin;
-		return true;
+		return null;
 	}
 	
 	public final Economy getEconomy() {
@@ -156,14 +144,6 @@ public abstract class DeadmanPlugin extends JavaPlugin {
 	
 	public final Permission getPermissions() {
 		return permissions;
-	}
-	
-	public final WorldGuardPlugin getWorldGuard() {
-		return worldGuard;
-	}
-	
-	public final WorldEditPlugin getWorldEdit() {
-		return worldEdit;
 	}
 	
 	/**

@@ -22,6 +22,7 @@ public interface ConfigObject {
 	 */
 	public void delete();
 	
+	// TODO add String varargs parameter to be used to specify which properties to update
 	/**
 	 * update all of this objects properties in the plugin's data YAML file
 	 */

@@ -1,7 +1,10 @@
 package org.deadmandungeons.deadmanplugin.filedata;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -13,6 +16,7 @@ import org.bukkit.World;
 import org.bukkit.block.Sign;
 import org.bukkit.material.MaterialData;
 import org.deadmandungeons.deadmanplugin.DeadmanUtils;
+import org.deadmandungeons.deadmanplugin.PlayerID;
 import org.deadmandungeons.deadmanplugin.timer.GlobalTimer;
 import org.deadmandungeons.deadmanplugin.timer.LocalTimer;
 import org.deadmandungeons.deadmanplugin.timer.Timer;
@@ -88,6 +92,7 @@ public class DataEntry {
 		private Location location;
 		private MaterialData materialData;
 		private Timer timer;
+		private PlayerID playerId;
 		
 		protected abstract T self();
 		
@@ -113,6 +118,11 @@ public class DataEntry {
 		
 		public final T withTimer(Timer timer) {
 			this.timer = timer;
+			return self();
+		}
+		
+		public final T withPlayerID(PlayerID playerId) {
+			this.playerId = playerId;
 			return self();
 		}
 		
@@ -152,6 +162,9 @@ public class DataEntry {
 		}
 		if (builder.timer != null) {
 			setTimer(builder.timer);
+		}
+		if (builder.playerId != null) {
+			setPlayerID(builder.playerId);
 		}
 	}
 	
@@ -407,6 +420,44 @@ public class DataEntry {
 		return format(ImmutableMap.<Enum<?>, Object> of(Key.DURATION, timer.getDuration(), Key.ELAPSED, ((LocalTimer) timer).getElapsed()));
 	}
 	
+	/**
+	 * @return the {@link PlayerID} that this DataEntry describes with keys {@link Key#UUID} and {@link Key#USERNAME}.
+	 * null will be returned is there was a missing or invalid key/value pair
+	 */
+	public PlayerID getPlayerID() {
+		Object uuid = getValue(Key.UUID);
+		Object usermane = getValue(Key.USERNAME);
+		if (uuid != null && DeadmanUtils.isUUID(uuid.toString()) && usermane != null) {
+			return new PlayerID(UUID.fromString(uuid.toString()), usermane.toString());
+		}
+		return null;
+	}
+	
+	/**
+	 * @param playerId - The {@link PlayerID} to set and be represented by the {@link Key#UUID} and {@link Key#USERNAME} keys.
+	 */
+	public void setPlayerID(PlayerID playerId) {
+		if (playerId != null) {
+			setValue(Key.UUID, playerId.getUUID().toString());
+			setValue(Key.USERNAME, playerId.getUsername().toLowerCase());
+		} else {
+			setValue(Key.UUID, null);
+			setValue(Key.USERNAME, null);
+		}
+	}
+	
+	/**
+	 * @param playerIds - the list of {@link PlayerID} to be formatted
+	 * @return a list of Strings as returned by {@link {@link PlayerID#toString()}
+	 */
+	public static List<String> formatPlayerIDList(List<PlayerID> playerIds) {
+		List<String> playerIdList = new ArrayList<String>();
+		for (PlayerID playerId : playerIds) {
+			playerIdList.add(playerId.toString());
+		}
+		return playerIdList;
+	}
+	
 	
 	/**
 	 * Null will be returned if:
@@ -479,7 +530,11 @@ public class DataEntry {
 		/* Timer related keys */
 		DURATION,
 		EXPIRE,
-		ELAPSED;
+		ELAPSED,
+		
+		/* PlayerID related keys */
+		UUID,
+		USERNAME;
 	}
 	
 }

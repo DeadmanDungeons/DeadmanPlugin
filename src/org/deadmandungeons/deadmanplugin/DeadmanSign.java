@@ -127,7 +127,7 @@ public abstract class DeadmanSign<T extends SignObject> {
 	
 	/**
 	 * @param signClass - The class of the {@link DeadmanSign} the desired {@link DeadmanSignHandler} is for
-	 * @return the DeadmanSignHandler instance that was set for the given DeadmanSign class or null no DeadmanSignHandler was set
+	 * @return the DeadmanSignHandler instance that was set for the given DeadmanSign class or if null no DeadmanSignHandler was set
 	 */
 	public static <V extends SignObject, T extends DeadmanSign<V>> DeadmanSignHandler<V, T> getHandler(Class<T> signClass) {
 		Validate.notNull(signClass, "signClass cannot be null");

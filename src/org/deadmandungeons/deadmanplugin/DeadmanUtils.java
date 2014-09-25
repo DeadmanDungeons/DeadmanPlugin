@@ -31,6 +31,7 @@ public class DeadmanUtils {
 	private static final String DURATION_REGEX = "^\\d+[dD](:\\d+[hH](:\\d+[mM])?)?$|^\\d+[dD]:\\d+[mM]$|^\\d+[hH](:\\d+[mM])?$|^\\d+[mM]$";
 	private static final Pattern DURATION_PATTERN = Pattern.compile(DURATION_REGEX);
 	private static final Pattern LOCATION_PATTERN = Pattern.compile("X(-?\\d+)Y(-?\\d+)Z(-?\\d+)W(.+)");
+	private static final Pattern UUID_PATTERN = Pattern.compile("^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$");
 	
 	// no private constructor to allow this util class to be extended
 	
@@ -63,7 +64,7 @@ public class DeadmanUtils {
 			formattedTimer += (formattedTimer.length() != 0 ? ", " : "") + seconds + unit;
 		}
 		
-		return formattedTimer;
+		return !formattedTimer.isEmpty() ? formattedTimer : "0 seconds";
 	}
 	
 	/**
@@ -305,6 +306,10 @@ public class DeadmanUtils {
 			return false;
 		}
 		return true;
+	}
+	
+	public static boolean isUUID(String uuid) {
+		return UUID_PATTERN.matcher(uuid).matches();
 	}
 	
 }

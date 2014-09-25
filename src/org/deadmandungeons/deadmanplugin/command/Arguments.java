@@ -3,27 +3,28 @@ package org.deadmandungeons.deadmanplugin.command;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.bukkit.command.CommandSender;
 import org.deadmandungeons.deadmanplugin.Result;
 import org.deadmandungeons.deadmanplugin.command.ArgumentInfo.ArgType;
 import org.deadmandungeons.deadmanplugin.command.DeadmanExecutor.CommandWrapper;
+import org.deadmandungeons.deadmanplugin.filedata.DeadmanConfig.Converter;
 
 /**
- * This class is used to pass a valid set of arguments to the {@link Command#execute(org.bukkit.command.CommandSender, Arguments) execute()} method of
- * a {@link Command}. To get an instance of this class, a {@link Matcher} should be built with a valid array of arguments
- * for the intended Command based on its defined {@link CommandInfo} annotation. The array of arguments can be given as the valid argument Objects, or
- * as a string representation which will later be converted to the valid argument object. The {@link Matcher#findMatch()
- * findMatch()} method of the Matcher will return a {@link SubCommand} object which is used as a parameter to the {@link Converter} builder.
- * The Converter class will finally convert the given array of arguments based on the matched SubCommand and
- * return a {@link Result Result&lt;Arguments&gt;} object. This result will contain either an error message of the reason the conversion failed,
- * or an instance of this class with the converted argument objects. <br />
+ * This class is used to pass a valid set of arguments to the {@link Command#execute(CommandSender, Arguments) execute()} method
+ * of a {@link Command}. To get an instance of this class, a {@link Matcher} should be built with a valid array of arguments for the
+ * intended Command based on its defined {@link CommandInfo} annotation. The array of arguments can be given as the valid argument
+ * Objects, or as a string representation which will later be converted to the valid argument object. The {@link Matcher#findMatch() findMatch()}
+ * method of the Matcher will return a {@link SubCommand} object which is used as a parameter to finally convert the given array of
+ * arguments based on the matched SubCommand and return a {@link Result Result&lt;Arguments&gt;} object. This result will contain either
+ * an error message of the reason the conversion failed, or an instance of this class with the converted argument objects. <br />
  * Example usage:<br />
  * 
  * <pre>
  * <code>
- * SubCommand subCmd = new Arguments.Matcher(executor).forCommand(command).withStringArgs(args).findMatch();
+ * SubCommand subCmd = Arguments.matcher(executor).forCommand(command).withStringArgs(args).findMatch();
  * if (subCmd != null) {
- *     Result&lt;Arguments&gt; conversionResult = new Arguments.Converter().forSubCommand(subCmd).convert();
- *     if (conversionResult.getErrorMessge() == null) {
+ *     Result&lt;Arguments&gt; conversionResult = subCmd.convert();
+ *     if (!conversionResult.isError()) {
  *         command.execute(sender, conversionResult.getResult());
  *     }
  * }
@@ -41,11 +42,11 @@ public final class Arguments {
 	private SubCommandInfo subCmd;
 	private int subCmdIndex;
 	
-	private Arguments(Converter converter) {
-		this.cmd = converter.subCmd.cmd;
-		this.args = converter.subCmd.validArgs;
-		this.subCmd = converter.subCmd.info;
-		this.subCmdIndex = converter.subCmd.index;
+	private Arguments(SubCommand subCmd) {
+		this.cmd = subCmd.cmd;
+		this.args = subCmd.validArgs;
+		this.subCmd = subCmd.info;
+		this.subCmdIndex = subCmd.index;
 	}
 	
 	/**
@@ -88,6 +89,10 @@ public final class Arguments {
 		}
 	}
 	
+	public static Matcher matcher(DeadmanExecutor executor) {
+		return new Matcher(executor);
+	}
+	
 	/**
 	 * This class should be used to build a {@link SubCommand} object which will be used by the {@link Converter} builder class.
 	 * This builder class will match the provided array of arguments against the provided Command's SubCommandInfo. <br />
@@ -106,7 +111,7 @@ public final class Arguments {
 		private String[] strArgs;
 		private Object[] validArgs;
 		
-		public Matcher(DeadmanExecutor executor) {
+		private Matcher(DeadmanExecutor executor) {
 			if (executor == null) {
 				throw new IllegalArgumentException("executor must not be null");
 			}
@@ -256,29 +261,6 @@ public final class Arguments {
 		public SubCommandInfo info() {
 			return info;
 		}
-	}
-	
-	/**
-	 * This builder class is used to convert the array of string arguments provided to a {@link Matcher} builder,
-	 * to a valid Arguments object.
-	 * Required parameters before calling {@link #convert()}:<br />
-	 * <ul>
-	 * <li>{@link #forSubCommand(SubCommand subCmd)}</li>
-	 * </ul>
-	 * @author Jon
-	 */
-	public static final class Converter {
-		
-		private SubCommand subCmd;
-		
-		/**
-		 * @param subCmd - The SubCommand that these arguments are for
-		 * @return this Builder
-		 */
-		public Converter forSubCommand(SubCommand subCmd) {
-			this.subCmd = subCmd;
-			return this;
-		}
 		
 		/**
 		 * @return a {@link Result Result&lt;Arguments&gt;} object that will contain either an error message of the reason the
@@ -290,49 +272,41 @@ public final class Arguments {
 		 * Or if a list of Object arguments was given but one of the objects is an invalid type based on the respective argument varType.
 		 */
 		public Result<Arguments> convert() throws IllegalStateException {
-			if (subCmd == null) {
-				throw new IllegalStateException("A non-null SubCommand bust be given");
-			}
-			
-			if (subCmd.info != null) {
-				if (subCmd.strArgs != null) {
+			if (info != null) {
+				if (strArgs != null) {
 					List<Object> args = new ArrayList<Object>();
 					Result<?> conversionResult = null;
 					
-					ArgumentInfo[] toArgs = subCmd.info.arguments();
-					for (int i = 0; i < subCmd.strArgs.length; i++) {
+					ArgumentInfo[] toArgs = info.arguments();
+					for (int i = 0; i < strArgs.length; i++) {
 						if (toArgs[i].argType() == ArgType.NON_VARIABLE) {
-							args.add(subCmd.strArgs[i]);
+							args.add(strArgs[i]);
 							continue;
 						}
-						ArgumentConverter<?> converter = subCmd.executor.getConverter(toArgs[i].varType());
+						ArgumentConverter<?> converter = executor.getConverter(toArgs[i].varType());
 						if (converter != null) {
-							conversionResult = converter.convertCommandArg(toArgs[i].argName(), subCmd.strArgs[i]);
-							if (conversionResult.getErrorMessge() != null) {
-								return new Result<Arguments>(null, conversionResult.getErrorMessge());
-							}
-							if (conversionResult.getResult() == null) {
-								String msg = "The ArgumentConverter for variables of type '%s' returned a Result containing neither an errorMessage or result object.";
-								throw new IllegalStateException(String.format(msg, toArgs[i].varType().getCanonicalName()));
+							conversionResult = converter.convertCommandArg(toArgs[i].argName(), strArgs[i]);
+							if (conversionResult.isError()) {
+								return new Result<Arguments>(conversionResult.getErrorMessage());
 							}
 							args.add(conversionResult.getResult());
 						} else if (toArgs[i].varType() == String.class) {
-							args.add(subCmd.strArgs[i]);
+							args.add(strArgs[i]);
 						} else {
 							String msg = "An ArgumentConverter was not found for arguments of type '%s'";
 							throw new IllegalStateException(String.format(msg, toArgs[i].varType().getCanonicalName()));
 						}
 					}
-					subCmd.validArgs = args.toArray(new Object[args.size()]);
+					validArgs = args.toArray(new Object[args.size()]);
 				} else {
-					validateArgs(subCmd.info.arguments(), subCmd.validArgs);
+					validateArgs(info.arguments(), validArgs);
 				}
 			}
 			
-			return new Result<Arguments>(new Arguments(this), null);
+			return new Result<Arguments>(new Arguments(this));
 		}
 		
-		private void validateArgs(ArgumentInfo[] arguments, Object[] givenArgs) {
+		private static void validateArgs(ArgumentInfo[] arguments, Object[] givenArgs) {
 			for (int i = 0; i < givenArgs.length; i++) {
 				if (arguments[i].varType() != givenArgs[i].getClass()) {
 					String msg = "An argument of type '%s' was expected, but instead got type '%s'";
