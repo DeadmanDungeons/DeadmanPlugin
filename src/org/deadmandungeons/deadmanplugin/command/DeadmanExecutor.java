@@ -8,12 +8,19 @@ import java.util.logging.Level;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Event;
+import org.bukkit.event.EventException;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.plugin.EventExecutor;
 import org.deadmandungeons.deadmanplugin.DeadmanPlugin;
 import org.deadmandungeons.deadmanplugin.DeadmanUtils;
 import org.deadmandungeons.deadmanplugin.Result;
@@ -59,6 +66,15 @@ public class DeadmanExecutor implements CommandExecutor {
 		this.coolDown = (coolDown != null && coolDown < 1 ? null : coolDown);
 		bukkitCmd.setExecutor(this);
 		
+		ExecutorListener listener = new ExecutorListener();
+		Bukkit.getPluginManager().registerEvent(PlayerQuitEvent.class, listener, EventPriority.NORMAL, new EventExecutor() {
+			
+			@Override
+			public void execute(Listener listener, Event event) throws EventException {
+				((ExecutorListener) listener).onPlayerQuit((PlayerQuitEvent) event);
+			}
+		}, plugin);
+		
 		/*
 		 * Default argument type converters. Assuming that all arguments of
 		 * these types should be converted this way. These converters can be
@@ -96,6 +112,10 @@ public class DeadmanExecutor implements CommandExecutor {
 				return bool != null ? new Result<Boolean>(bool) : new Result<Boolean>(String.format(NOT_BOOLEAN, arg));
 			}
 		});
+	}
+	
+	public final DeadmanPlugin getPlugin() {
+		return plugin;
 	}
 	
 	public final PluginCommand getBukkitCmd() {
@@ -224,7 +244,7 @@ public class DeadmanExecutor implements CommandExecutor {
 	 * @param command - The class of the command that should be registered
 	 */
 	public final <T extends Command> void registerCommand(Class<T> commandClass) {
-		Validate.notNull(commandClass);
+		Validate.notNull(commandClass, "commandClass cannot be null");
 		CommandInfo info = getCommandInfo(commandClass);
 		if (info != null) {
 			try {
@@ -242,7 +262,7 @@ public class DeadmanExecutor implements CommandExecutor {
 	 * @param command - An instance of the command that should be registered
 	 */
 	public final <T extends Command> void registerCommand(T command) {
-		Validate.notNull(command);
+		Validate.notNull(command, "command cannot be null");
 		CommandInfo info = getCommandInfo(command.getClass());
 		if (info != null) {
 			commands.put(command.getClass(), new CommandWrapper<T>(info, command));
@@ -275,9 +295,9 @@ public class DeadmanExecutor implements CommandExecutor {
 	 */
 	@SuppressWarnings("unchecked")
 	public final <T extends Command> CommandWrapper<T> getCommandWrapper(Class<T> command) throws IllegalStateException {
-		Validate.notNull(command);
+		Validate.notNull(command, "command cannot be null");
 		if (!commands.containsKey(command)) {
-			throw new IllegalArgumentException("A command for type '" + command.getCanonicalName() + "' has not been registered!");
+			throw new IllegalStateException("A command for type '" + command.getCanonicalName() + "' has not been registered!");
 		}
 		return (CommandWrapper<T>) commands.get(command);
 	}
@@ -301,28 +321,17 @@ public class DeadmanExecutor implements CommandExecutor {
 	 * @param cmdName - The String name and syntax for the PseudoCommand. This must not match any other PseudoCommand or regular command name.
 	 * @param pseudoCommand - The PseudoCommand object to be executed when this PseudoCommand is called
 	 */
-	public final void registerPseudoCommad(String cmdName, PseudoCommand pseudoCommand) {
-		Validate.notNull(cmdName);
-		Validate.notNull(pseudoCommand);
+	public final void registerPseudoCommand(String cmdName, PseudoCommand pseudoCommand) {
+		Validate.notNull(cmdName, "cmdName cannot be null");
+		Validate.notNull(pseudoCommand, "pseudoCommand cannot be null");
 		
-		if (getPseudoCommand(cmdName) == null) {
-			if (pseudoCommand.getClass().getAnnotation(CommandInfo.class) != null) {
-				String msg = "The registered Pseudo Command named '" + cmdName + "' has the CommandInfo annotaion, "
-						+ "but this annotation is useless as it will be ignored";
-				plugin.getLogger().warning(msg);
-			}
-			pseudoCommands.put(cmdName, pseudoCommand);
-		} else {
-			String msg = "A Pseudo Command named '" + cmdName + "' (ignoring case) has already been registered! "
-					+ "This Pseudo Command will not be registered";
-			plugin.getLogger().warning(msg);
-		}
+		pseudoCommands.put(cmdName.toLowerCase(), pseudoCommand);
 	}
 	
 	/**
 	 * Any modification to the returned Map, will not have any effect on the registered PseudoCommands.
 	 * Use the {@link #registerPseudoCommad(String cmdName, Command command)} method to properly register a PseudoCommand.
-	 * @return A copied HashMap containing all of the commands pattern by key, and the registered commands by value.
+	 * @return A new HashMap containing all of the commands pattern by key, and the registered commands by value.
 	 */
 	public final Map<String, PseudoCommand> getPseudoCommands() {
 		return new HashMap<String, PseudoCommand>(pseudoCommands);
@@ -332,8 +341,8 @@ public class DeadmanExecutor implements CommandExecutor {
 	 * @param converter - The ArgumentConverter to register
 	 */
 	public final <T> void registerConverter(Class<? super T> type, ArgumentConverter<T> converter) {
-		Validate.notNull(type);
-		Validate.notNull(converter);
+		Validate.notNull(type, "type cannot be null");
+		Validate.notNull(converter, "converter cannot be null");
 		
 		converters.put(type, converter);
 	}
@@ -360,8 +369,8 @@ public class DeadmanExecutor implements CommandExecutor {
 	 * @param messagePath - The path the the help info message in the plugins lang file
 	 */
 	public final void registerHelpInfo(String helpArg, String messagePath) {
-		Validate.notNull(helpArg);
-		Validate.notNull(messagePath);
+		Validate.notNull(helpArg, "helpArg cannot be null");
+		Validate.notNull(messagePath, "messagePath cannot be null");
 		String arg = helpArg.trim().toLowerCase();
 		if (StringUtils.isNumeric(arg)) {
 			throw new IllegalArgumentException("helpArg must not be a number");
@@ -387,7 +396,8 @@ public class DeadmanExecutor implements CommandExecutor {
 	 * false if they have none
 	 */
 	public static boolean hasCommandPerm(CommandSender sender, String[] perms) {
-		if (perms.length == 0) {
+		Validate.notNull(sender, "sender cannot be null");
+		if (perms == null || perms.length == 0) {
 			return true;
 		}
 		for (String perm : perms) {
@@ -420,6 +430,13 @@ public class DeadmanExecutor implements CommandExecutor {
 		
 		public T getCmd() {
 			return cmd;
+		}
+	}
+	
+	private class ExecutorListener implements Listener {
+		
+		public void onPlayerQuit(PlayerQuitEvent event) {
+			ConfirmationCommand.removeUser(bukkitCmd, event.getPlayer());
 		}
 	}
 	
