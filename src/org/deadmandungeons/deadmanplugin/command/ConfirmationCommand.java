@@ -2,222 +2,222 @@ package org.deadmandungeons.deadmanplugin.command;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
-import org.bukkit.command.PluginCommand;
+import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
+import org.deadmandungeons.deadmanplugin.DeadmanPlugin;
 
 /**
- * This abstract class is useful for actions where a player or console user may need to confirm before the action is carried out.<br>
- * When an instance of this class is constructed and registered using the static method {@link #register(ConfirmationCommand, String, String)},
- * two {@link PseudoCommand}s are registered for the specified confirmCmd and declineCmd strings. A user that has been prompted to
- * confirm/decline a certain action should be added to the respective ConfirmationCommand by
- * calling {@link #addPromptedUser(CommandSender, Object)}. Once a user has been declared to be 'prompted', if they execute either
- * the confirmCmd or declineCmd PseudoCommands, the respective event methods {@link #onAccept(CommandSender, Object)} and
- * {@link #onDecline(CommandSender, Object)} will be called. If the ConfirmationCommand was constructed to specify a timeout,
- * the 'prompted' user will be removed from the list of prompted users if they failed to confirm/decline within the timeout, and
- * the {@link #onTimeout(CommandSender, Object)} event method will be called.
- * @param <T> - The type of the data object that should be stored when a user is prompted
+ * This abstract class is useful for actions where a player may need to confirm before the action is carried out.<br>
+ * When an instance of this class is constructed and registered
+ * using {@link DeadmanExecutor#registerConfirmationCommand(ConfirmationCommand, String, String)}, two {@link PseudoCommand}s are
+ * registered for the specified acceptCmd and declineCmd strings. A player that has been prompted to accept/decline a certain action
+ * should be added to the respective ConfirmationCommand by calling {@link #addPromptedPlayer(Player, Object)}. Once a player
+ * has been declared to be 'prompted', if they execute either the acceptCmd or declineCmd PseudoCommands, the respective event
+ * methods {@link #onAccept(Player, Object)} and {@link #onDecline(Player, Object)} will be called. <br>
+ * If the ConfirmationCommand was constructed to specify a timeout, the 'prompted' player will be removed from the list of prompted players
+ * if they failed to accept/decline within the timeout, and the {@link #onTimeout(Player, Object)} event method will be called.<br>
+ * A player can only be 'prompted' by one ConfirmationCommand for all plugins. If {@link #addPromptedPlayer(Player, Object)} is
+ * called for a player that is already 'prompted', they will be removed from the previous confirmation and added to the new one.<br>
+ * If a player is 'prompted', and they quit, they will be removed from the promptedPlayers datastore.
+ * @param <T> - The type of the data object that should be stored when a player is prompted
  * @author Jon
  */
 public abstract class ConfirmationCommand<T> {
 	
-	// TODO maybe have a lot of this stuff in DeadmanExecutor
-	private static final Map<Class<?>, ConfirmationCommand<?>> commands = new HashMap<Class<?>, ConfirmationCommand<?>>();
-	private static final Map<PluginCommand, Map<String, ConfirmationInfo<?>>> promptedUsers = new HashMap<PluginCommand, Map<String, ConfirmationInfo<?>>>();
+	// static map so that a player can only be prompted for one confirmation between all plugins
+	private static final Map<UUID, ConfirmationInfo<?>> promptedPlayers = new HashMap<UUID, ConfirmationInfo<?>>();
 	
-	private final Map<String, ConfirmationInfo<?>> users;
+	private static final PseudoCommand acceptCommand = new AcceptCommand();
+	private static final PseudoCommand declineCommand = new DeclineCommand();
 	
-	private final DeadmanExecutor executor;
+	private final DeadmanPlugin plugin;
 	private final Class<T> type;
 	private final int timeout;
 	
 	/**
-	 * @param executor - The {@link DeadmanExecutor} that this ConfirmationCommand should be registered with when
-	 * calling {@link #register(ConfirmationCommand, String, String)}
-	 * @param type - The Class of the data object that should be stored when a user is prompted
+	 * @param plugin - The {@link DeadmanPlugin} that this ConfirmationCommand belongs to
+	 * @param type - The Class of the data object that should be stored when a player is prompted
+	 * @throws IllegalArgumentException if plugin or type is null
 	 */
-	public ConfirmationCommand(DeadmanExecutor executor, Class<T> type) {
-		this(executor, type, -1);
+	public ConfirmationCommand(DeadmanPlugin plugin, Class<T> type) {
+		this(plugin, type, -1);
 	}
 	
 	/**
-	 * @param executor - The {@link DeadmanExecutor} that this ConfirmationCommand should be registered with when
-	 * calling {@link #register(ConfirmationCommand, String, String)}
-	 * @param type - The Class of the data object that should be stored when a user is prompted
-	 * @param timeout - The time in seconds that a user has to either confirm or decline when they have been prompted
+	 * @param plugin - The {@link DeadmanPlugin} that this ConfirmationCommand belongs to
+	 * @param type - The Class of the data object that should be stored when a player is prompted
+	 * @param timeout - The time in seconds that a player has to either confirm or decline when they have been prompted
+	 * @throws IllegalArgumentException if plugin or type is null
 	 */
-	public ConfirmationCommand(DeadmanExecutor executor, Class<T> type, int timeout) {
-		Validate.notNull(executor, "executor cannot be null");
+	public ConfirmationCommand(DeadmanPlugin plugin, Class<T> type, int timeout) {
+		Validate.notNull(plugin, "plugin cannot be null");
 		Validate.notNull(type, "type cannot be null");
-		this.executor = executor;
+		this.plugin = plugin;
 		this.type = type;
 		this.timeout = timeout;
-		boolean newCmd = !promptedUsers.containsKey(executor.getBukkitCmd());
-		users = (newCmd ? new HashMap<String, ConfirmationInfo<?>>() : promptedUsers.get(executor.getBukkitCmd()));
-		if (newCmd) {
-			promptedUsers.put(executor.getBukkitCmd(), users);
-		}
 	}
 	
-	/**
-	 * @param cmd - The instance of the ConfirmationCommand to register
-	 * @param confirmCmd - The String for the confirm {@link PseudoCommand} to be registered
-	 * @param declineCmd - The String for the decline {@link PseudoCommand} to be registered
-	 */
-	public static void register(ConfirmationCommand<?> cmd, String confirmCmd, String declineCmd) {
-		Validate.notNull(cmd, "cmd cannot be null");
-		Validate.notNull(confirmCmd, "confirmCmd cannot be null");
-		Validate.notNull(declineCmd, "declineCmd cannot be null");
-		
-		cmd.executor.registerPseudoCommand(confirmCmd.toLowerCase(), ConfirmCommand.getInstance(cmd.executor.getBukkitCmd()));
-		cmd.executor.registerPseudoCommand(declineCmd.toLowerCase(), DeclineCommand.getInstance(cmd.executor.getBukkitCmd()));
-		commands.put(cmd.getClass(), cmd);
-	}
 	
 	/**
-	 * @param cmdClass - The class of the ConfirmationCommand to get
-	 * @return the registered instance of the given ConfirmationCommand class
-	 * @throws IllegalStateException if no instance of the given ConfirmationCommand class has been registered
+	 * @param sender - The {@link Player} to be declared as 'prompted' for this ConfirmationCommand
+	 * @param data - The data object of type T to be stored for the given prompted player
+	 * @throws IllegalArgumentException if player is null
 	 */
-	public static <T, C extends ConfirmationCommand<T>> C get(Class<C> cmdClass) throws IllegalStateException {
-		Validate.notNull(cmdClass, "cmdClass cannot be null");
-		C cmd = cmdClass.cast(commands.get(cmdClass));
-		if (cmd == null) {
-			throw new IllegalStateException("A ConfirmationCommand for type '" + cmdClass.getCanonicalName() + "' has not been registered!");
-		}
-		return cmd;
-	}
-	
-	/**
-	 * @param sender - The {@link CommandSender} user to be declared as 'prompted'
-	 * @param data - The data object of type T to be stored for the given prompted user
-	 */
-	public final void addPromptedUser(final CommandSender user, T data) {
-		Validate.notNull(user, "user cannot be null");
+	public final void addPromptedPlayer(final Player player, T data) {
+		Validate.notNull(player, "player cannot be null");
 		BukkitTask task = null;
 		if (timeout > 0) {
-			task = Bukkit.getScheduler().runTaskLater(executor.getPlugin(), new Runnable() {
+			task = Bukkit.getScheduler().runTaskLater(plugin, new Runnable() {
 				
 				@Override
 				public void run() {
-					ConfirmationInfo<?> info = users.remove(user.getName());
+					ConfirmationInfo<?> info = promptedPlayers.remove(player.getUniqueId());
 					if (info != null) {
-						onTimeout(user, type.cast(info.data));
+						// This is type safe because this task will be canceled if the player is added to a different ConfirmationCommand
+						onTimeout(player, type.cast(info.data));
 					}
 				}
 			}, timeout * 20);
 		}
-		ConfirmationInfo<?> previousInfo = removeUser(executor.getBukkitCmd(), user);
+		ConfirmationInfo<?> previousInfo = removePlayer(player.getUniqueId());
 		if (previousInfo != null) {
-			decline(user, previousInfo);
+			decline(player, previousInfo);
 		}
 		
 		ConfirmationInfo<T> info = new ConfirmationInfo<T>(this, data, task);
-		users.put(user.getName(), info);
+		promptedPlayers.put(player.getUniqueId(), info);
 	}
 	
 	/**
-	 * @param user - The {@link CommandSender} user to be no longer declared as 'prompted'
-	 * @return the data object of type T that was stored for the removed user, or null if the given user was not declared as 'prompted'
+	 * the {@link #onTerminate(Player, Object)} event method will be invoked for the given player
+	 * if they were 'prompted' for this ConfirmationCommand
+	 * @param player - The {@link Player} to be no longer declared as 'prompted'
+	 * @return the data object of type T that was stored for the removed player, or null if the given player was not declared as 'prompted'
 	 */
-	public final T removePromptedUser(CommandSender user) {
-		ConfirmationInfo<?> info = removeUser(executor.getBukkitCmd(), user);
-		if (info != null) {
-			return type.cast(info.data);
+	public final T removePromptedPlayer(Player player) {
+		ConfirmationInfo<?> info = promptedPlayers.get(player.getUniqueId());
+		if (info != null && info.confirmationCmd == this) {
+			T data = type.cast(removePlayer(player.getUniqueId()).data);
+			onTerminate(player, type.cast(removePlayer(player.getUniqueId()).data));
+			return data;
 		}
 		return null;
 	}
 	
 	/**
-	 * @param user - The {@link CommandSender} user to check if they are declared as 'prompted'
-	 * @return true if the given user is declared as 'prompted' for this ConfirmationCommand or false otherwise
+	 * Remove all 'prompted' players for this ConfirmationCommand, and invoke {@link #onTerminate(Player, Object)} for each removed player
 	 */
-	public final boolean isUserPrompted(CommandSender user) {
-		ConfirmationInfo<?> info = users.get(user.getName());
+	public final void removePromptedPlayers() {
+		Map<UUID, ConfirmationInfo<?>> copy = new HashMap<UUID, ConfirmationInfo<?>>(promptedPlayers);
+		for (UUID uuid : copy.keySet()) {
+			ConfirmationInfo<?> info = promptedPlayers.get(uuid);
+			if (info.confirmationCmd == this) {
+				removePlayer(uuid);
+				Player player = Bukkit.getPlayer(uuid);
+				if (player != null) {
+					onTerminate(player, type.cast(info.data));
+				}
+			}
+		}
+	}
+	
+	/**
+	 * @param player - The {@link Player} to check if they are declared as 'prompted'
+	 * @return true if the given player is declared as 'prompted' for this ConfirmationCommand or false otherwise
+	 */
+	public final boolean isPlayerPrompted(Player player) {
+		ConfirmationInfo<?> info = promptedPlayers.get(player.getUniqueId());
 		return info != null && info.confirmationCmd == this;
 	}
 	
-	/**
-	 * @param user - The {@link CommandSender} user to check if they are declared as 'prompted'
-	 * @return true if the given user is declared as 'prompted' for any ConfirmationCommand of the same PluginCommand or false otherwise
-	 */
-	public final boolean isUserPromptedAny(CommandSender user) {
-		return users.containsKey(user.getName());
-	}
-	
 	
 	/**
-	 * @param user - The prompted {@link CommandSender} user that confirmed
-	 * @param data - The data object of type T that was stored for this user when they were prompted
-	 * @return true if the prompted user confirmed successfully and false otherwise. If false is returned,
-	 * the confirm PsuedoCommand execution will be treaded as an invalid command
+	 * @param player - The {@link Player} to be no longer declared as 'prompted'
+	 * @return the data object that was stored for the removed player,
+	 * or null if the given player was not declared as 'prompted' for any ConfirmationCommands
 	 */
-	protected abstract boolean onConfirm(CommandSender user, T data);
-	
-	/**
-	 * @param user - The prompted {@link CommandSender} user that declined
-	 * @param data - The data object of type T that was stored for this user when they were prompted
-	 * @return true if the prompted user declined successfully and false otherwise. If false is returned,
-	 * the decline PsuedoCommand execution will be treaded as an invalid command
-	 */
-	protected abstract boolean onDecline(CommandSender user, T data);
-	
-	/**
-	 * @param user - The prompted {@link CommandSender} user that failed to confirm/decline in the specified timeout
-	 * @param data - The data object of type T that was stored for this user when they were prompted
-	 */
-	protected abstract void onTimeout(CommandSender user, T data);
-	
-	
-	static ConfirmationInfo<?> removeUser(PluginCommand cmd, CommandSender user) {
-		Map<String, ConfirmationInfo<?>> users = promptedUsers.get(cmd);
-		if (users != null) {
-			ConfirmationInfo<?> info = users.remove(user.getName());
-			if (info != null) {
-				if (info.task != null) {
-					Bukkit.getScheduler().cancelTask(info.task.getTaskId());
-				}
-				return info;
-			}
+	public static final Object removePromptedPlayerAll(Player player) {
+		ConfirmationInfo<?> info = removePlayer(player.getUniqueId());
+		if (info != null) {
+			return info.data;
 		}
 		return null;
 	}
 	
-	private boolean confirm(CommandSender user, ConfirmationInfo<?> info) {
-		return onConfirm(user, type.cast(info.data));
+	/**
+	 * @param player - The {@link Player} to check if they are declared as 'prompted'
+	 * @return true if the given player is declared as 'prompted' for any ConfirmationCommand of any plugin or false otherwise
+	 */
+	public static boolean isPlayerPromptedAny(Player player) {
+		return promptedPlayers.containsKey(player.getUniqueId());
 	}
 	
-	private boolean decline(CommandSender user, ConfirmationInfo<?> info) {
-		return onDecline(user, type.cast(info.data));
-	}
+	
+	/**
+	 * @param player - The prompted {@link Player} that confirmed
+	 * @param data - The data object of type T that was stored for this player when they were prompted
+	 */
+	protected abstract void onAccept(Player player, T data);
+	
+	/**
+	 * @param player - The prompted {@link Player} that declined
+	 * @param data - The data object of type T that was stored for this player when they were prompted
+	 */
+	protected abstract void onDecline(Player player, T data);
+	
+	/**
+	 * @param player - The prompted {@link Player} that failed to confirm/decline in the specified timeout
+	 * @param data - The data object of type T that was stored for this player when they were prompted
+	 */
+	protected abstract void onTimeout(Player player, T data);
+	
+	protected abstract void onTerminate(Player player, T data);
 	
 	
-	private static final class ConfirmCommand implements PseudoCommand {
-		
-		private static final Map<PluginCommand, ConfirmCommand> instances = new HashMap<PluginCommand, ConfirmCommand>();
-		
-		private static ConfirmCommand getInstance(PluginCommand cmd) {
-			ConfirmCommand confirmCommand = instances.get(cmd);
-			if (confirmCommand == null) {
-				instances.put(cmd, confirmCommand = new ConfirmCommand(cmd));
+	static ConfirmationInfo<?> removePlayer(UUID uuid) {
+		ConfirmationInfo<?> info = promptedPlayers.remove(uuid);
+		if (info != null) {
+			if (info.task != null) {
+				Bukkit.getScheduler().cancelTask(info.task.getTaskId());
 			}
-			return confirmCommand;
+			return info;
 		}
-		
-		private final PluginCommand cmd;
-		
-		private ConfirmCommand(PluginCommand cmd) {
-			this.cmd = cmd;
-		}
+		return null;
+	}
+	
+	static PseudoCommand getAcceptCommand() {
+		return acceptCommand;
+	}
+	
+	static PseudoCommand getDeclineCommand() {
+		return declineCommand;
+	}
+	
+	private void accept(Player player, ConfirmationInfo<?> info) {
+		onAccept(player, type.cast(info.data));
+	}
+	
+	private void decline(Player player, ConfirmationInfo<?> info) {
+		onDecline(player, type.cast(info.data));
+	}
+	
+	
+	private static final class AcceptCommand implements PseudoCommand {
 		
 		@Override
-		public boolean execute(CommandSender sender) {
-			ConfirmationInfo<?> info = removeUser(cmd, sender);
-			if (info != null) {
-				return info.confirmationCmd.confirm(sender, info);
+		public boolean execute(CommandSender user) {
+			if (user instanceof Player) {
+				Player player = (Player) user;
+				ConfirmationInfo<?> info = removePlayer(player.getUniqueId());
+				if (info != null) {
+					info.confirmationCmd.accept(player, info);
+					return true;
+				}
 			}
 			return false;
 		}
@@ -225,27 +225,15 @@ public abstract class ConfirmationCommand<T> {
 	
 	private static final class DeclineCommand implements PseudoCommand {
 		
-		private static final Map<PluginCommand, DeclineCommand> instances = new HashMap<PluginCommand, DeclineCommand>();
-		
-		private static DeclineCommand getInstance(PluginCommand cmd) {
-			DeclineCommand declineCommand = instances.get(cmd);
-			if (declineCommand == null) {
-				instances.put(cmd, declineCommand = new DeclineCommand(cmd));
-			}
-			return declineCommand;
-		}
-		
-		private final PluginCommand cmd;
-		
-		private DeclineCommand(PluginCommand cmd) {
-			this.cmd = cmd;
-		}
-		
 		@Override
-		public boolean execute(CommandSender sender) {
-			ConfirmationInfo<?> info = removeUser(cmd, sender);
-			if (info != null) {
-				return info.confirmationCmd.decline(sender, info);
+		public boolean execute(CommandSender user) {
+			if (user instanceof Player) {
+				Player player = (Player) user;
+				ConfirmationInfo<?> info = removePlayer(player.getUniqueId());
+				if (info != null) {
+					info.confirmationCmd.decline(player, info);
+					return true;
+				}
 			}
 			return false;
 		}

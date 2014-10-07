@@ -446,18 +446,6 @@ public class DataEntry {
 		}
 	}
 	
-	/**
-	 * @param playerIds - the list of {@link PlayerID} to be formatted
-	 * @return a list of Strings as returned by {@link {@link PlayerID#toString()}
-	 */
-	public static List<String> formatPlayerIDList(List<PlayerID> playerIds) {
-		List<String> playerIdList = new ArrayList<String>();
-		for (PlayerID playerId : playerIds) {
-			playerIdList.add(playerId.toString());
-		}
-		return playerIdList;
-	}
-	
 	
 	/**
 	 * Null will be returned if:

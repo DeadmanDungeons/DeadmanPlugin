@@ -54,7 +54,7 @@ public class LocalTimer extends Timer {
 	 * @return the amount of time in milliseconds that this timer has elapsed.
 	 */
 	public long getElapsed() {
-		return elapsed;
+		return startTime != -1 ? elapsed = System.currentTimeMillis() - startTime : elapsed;
 	}
 	
 	/**

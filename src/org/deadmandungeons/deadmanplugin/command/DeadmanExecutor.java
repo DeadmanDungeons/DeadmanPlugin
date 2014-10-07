@@ -4,7 +4,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.logging.Level;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
@@ -42,6 +41,7 @@ public class DeadmanExecutor implements CommandExecutor {
 	private static final String NOT_BOOLEAN = "'%s' is not a boolean. Argument must be either 'true' or 'false'";
 	
 	private final Map<Class<?>, CommandWrapper<?>> commands = new LinkedHashMap<Class<?>, CommandWrapper<?>>();
+	private final Map<Class<?>, ConfirmationCommand<?>> confirmationCommands = new HashMap<Class<?>, ConfirmationCommand<?>>();
 	private final Map<String, PseudoCommand> pseudoCommands = new HashMap<String, PseudoCommand>();
 	private final Map<String, String> helpInfo = new HashMap<String, String>();
 	private final Map<Class<?>, ArgumentConverter<?>> converters = new HashMap<Class<?>, ArgumentConverter<?>>();
@@ -112,18 +112,6 @@ public class DeadmanExecutor implements CommandExecutor {
 				return bool != null ? new Result<Boolean>(bool) : new Result<Boolean>(String.format(NOT_BOOLEAN, arg));
 			}
 		});
-	}
-	
-	public final DeadmanPlugin getPlugin() {
-		return plugin;
-	}
-	
-	public final PluginCommand getBukkitCmd() {
-		return bukkitCmd;
-	}
-	
-	public final Integer getCoolDown() {
-		return coolDown;
 	}
 	
 	@Override
@@ -237,18 +225,43 @@ public class DeadmanExecutor implements CommandExecutor {
 	}
 	
 	/**
+	 * @return the {@link DeadmanPlugin} that this DeadmanExecutor is for
+	 */
+	public final DeadmanPlugin getPlugin() {
+		return plugin;
+	}
+	
+	/**
+	 * @return the bukkit {@link PluginCommand} object that represents the base command for DeadmanExecutor
+	 */
+	public final PluginCommand getBukkitCmd() {
+		return bukkitCmd;
+	}
+	
+	/**
+	 * @return the command cooldown that was specified in the constructor, or null if there is no cooldown
+	 */
+	public final Integer getCoolDown() {
+		return coolDown;
+	}
+	
+	
+	/**
 	 * Register the given command.<br>
 	 * This method will construct a new instance of the given Command class by calling<br>
 	 * {@link java.lang.Class#newInstance() Class#newInstance()}. Thus the Command class must have a no-arg constructor.
 	 * If there is not a public no-arg constructor, then register the Command using {@link #registerCommand(Command)}.
 	 * @param command - The class of the command that should be registered
+	 * @throws IllegalStateException if the class of the given command is not annotated with the {@link CommandInfo} annotation
+	 * with at least the name and pattern properties
+	 * @throws IllegalArgumentException if command is null
 	 */
-	public final <T extends Command> void registerCommand(Class<T> commandClass) {
+	public final <C extends Command> void registerCommand(Class<C> commandClass) {
 		Validate.notNull(commandClass, "commandClass cannot be null");
 		CommandInfo info = getCommandInfo(commandClass);
 		if (info != null) {
 			try {
-				commands.put(commandClass, new CommandWrapper<T>(info, commandClass.newInstance()));
+				commands.put(commandClass, new CommandWrapper<C>(info, commandClass.newInstance()));
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -257,24 +270,25 @@ public class DeadmanExecutor implements CommandExecutor {
 	
 	/**
 	 * Register the given command.<br>
-	 * Use this register method over {@link #registerCommand(Class)} when the
-	 * Command class does not have a public no-arg constructor.
+	 * Use this register method over {@link #registerCommand(Class)} when the Command class does not have a public no-arg constructor.
 	 * @param command - An instance of the command that should be registered
+	 * @throws IllegalStateException if the class of the given command is not annotated with the {@link CommandInfo} annotation
+	 * with at least the name and pattern properties
+	 * @throws IllegalArgumentException if command is null
 	 */
-	public final <T extends Command> void registerCommand(T command) {
+	public final <C extends Command> void registerCommand(C command) {
 		Validate.notNull(command, "command cannot be null");
 		CommandInfo info = getCommandInfo(command.getClass());
 		if (info != null) {
-			commands.put(command.getClass(), new CommandWrapper<T>(info, command));
+			commands.put(command.getClass(), new CommandWrapper<C>(info, command));
 		}
 	}
 	
-	private <T extends Command> CommandInfo getCommandInfo(Class<T> commandClass) {
+	private <C extends Command> CommandInfo getCommandInfo(Class<C> commandClass) {
 		CommandInfo info = commandClass.getAnnotation(CommandInfo.class);
 		if (info == null || info.name() == null || info.pattern() == null) {
-			String msg = "The '%s' command must be annotated with the CommandInfo annotation,"
-					+ " and the name, and pattern cannot be null. This command will not be registered";
-			plugin.getLogger().log(Level.SEVERE, String.format(msg, commandClass.getCanonicalName()));
+			String msg = "The '%s' command must be annotated with the CommandInfo annotation, and the name, and pattern cannot be null";
+			throw new IllegalStateException(String.format(msg, commandClass.getCanonicalName()));
 		}
 		return info;
 	}
@@ -284,7 +298,7 @@ public class DeadmanExecutor implements CommandExecutor {
 	 * @return an instance of the registered Command
 	 * @throws IllegalStateException if the command has not been registered.
 	 */
-	public final <T extends Command> T getCommand(Class<T> command) {
+	public final <C extends Command> C getCommand(Class<C> command) {
 		return getCommandWrapper(command).getCmd();
 	}
 	
@@ -294,12 +308,12 @@ public class DeadmanExecutor implements CommandExecutor {
 	 * @throws IllegalStateException if the command has not been registered.
 	 */
 	@SuppressWarnings("unchecked")
-	public final <T extends Command> CommandWrapper<T> getCommandWrapper(Class<T> command) throws IllegalStateException {
+	public final <C extends Command> CommandWrapper<C> getCommandWrapper(Class<C> command) {
 		Validate.notNull(command, "command cannot be null");
 		if (!commands.containsKey(command)) {
 			throw new IllegalStateException("A command for type '" + command.getCanonicalName() + "' has not been registered!");
 		}
-		return (CommandWrapper<T>) commands.get(command);
+		return (CommandWrapper<C>) commands.get(command);
 	}
 	
 	/**
@@ -311,6 +325,7 @@ public class DeadmanExecutor implements CommandExecutor {
 	public final Map<Class<?>, CommandWrapper<?>> getCommands() {
 		return new HashMap<Class<?>, CommandWrapper<?>>(commands);
 	}
+	
 	
 	/**
 	 * A pseudo command is a command that will not be registered as a real command, but can be executed.
@@ -337,10 +352,55 @@ public class DeadmanExecutor implements CommandExecutor {
 		return new HashMap<String, PseudoCommand>(pseudoCommands);
 	}
 	
+	
+	/**
+	 * Equivalent of calling <br>
+	 * {@link #registerConfirmationCommand(ConfirmationCommand, String, String) registerConfirmationCommand(command, null, null)}
+	 * @param command - The instance of the ConfirmationCommand to register
+	 */
+	public final void registerConfirmationCommand(ConfirmationCommand<?> command) {
+		registerConfirmationCommand(command, null, null);
+	}
+	
+	/**
+	 * @param command - The instance of the ConfirmationCommand to register
+	 * @param acceptCmd - The String for the accept {@link PseudoCommand} to be registered. defaults to "accept".
+	 * @param declineCmd - The String for the decline {@link PseudoCommand} to be registered. defaults to "cancel".
+	 * @throws IllegalArgumentException if command is null
+	 */
+	public final void registerConfirmationCommand(ConfirmationCommand<?> command, String acceptCmd, String declineCmd) {
+		Validate.notNull(command, "command cannot be null");
+		
+		if (acceptCmd == null) {
+			acceptCmd = "accept";
+		}
+		if (declineCmd == null) {
+			declineCmd = "cancel";
+		}
+		registerPseudoCommand(acceptCmd.toLowerCase(), ConfirmationCommand.getAcceptCommand());
+		registerPseudoCommand(declineCmd.toLowerCase(), ConfirmationCommand.getDeclineCommand());
+		confirmationCommands.put(command.getClass(), command);
+	}
+	
+	/**
+	 * @param cmdClass - The class of the ConfirmationCommand to get
+	 * @return the registered instance of the given ConfirmationCommand class
+	 * @throws IllegalStateException if no instance of the given ConfirmationCommand class has been registered
+	 */
+	public final <T, C extends ConfirmationCommand<T>> C getConfirmationCommand(Class<C> cmdClass) {
+		Validate.notNull(cmdClass, "cmdClass cannot be null");
+		C cmd = cmdClass.cast(confirmationCommands.get(cmdClass));
+		if (cmd == null) {
+			throw new IllegalStateException("A ConfirmationCommand for type '" + cmdClass.getCanonicalName() + "' has not been registered!");
+		}
+		return cmd;
+	}
+	
+	
 	/**
 	 * @param converter - The ArgumentConverter to register
 	 */
-	public final <T> void registerConverter(Class<? super T> type, ArgumentConverter<T> converter) {
+	public final <C> void registerConverter(Class<? super C> type, ArgumentConverter<C> converter) {
 		Validate.notNull(type, "type cannot be null");
 		Validate.notNull(converter, "converter cannot be null");
 		
@@ -350,21 +410,19 @@ public class DeadmanExecutor implements CommandExecutor {
 	/**
 	 * @param type - The type of converter
 	 * @return the registered {@link ArgumentConverter} for the given type or
-	 * null if an ArgumentConverter was not registered for the given
-	 * type.
+	 * null if an ArgumentConverter was not registered for the given type.
 	 */
 	@SuppressWarnings("unchecked")
-	public final <T> ArgumentConverter<T> getConverter(Class<T> type) {
-		return (ArgumentConverter<T>) converters.get(type);
+	public final <C> ArgumentConverter<C> getConverter(Class<C> type) {
+		return (ArgumentConverter<C>) converters.get(type);
 	}
 	
+	
 	/**
-	 * Help Info is a message that will be sent to a CommandSender when the help
-	 * command with a registered help info argument is executed. The syntax of a
-	 * help info command is <br>
+	 * Help Info is a message that will be sent to a CommandSender when the help command with a
+	 * registered help info argument is executed. The syntax of a help info command is <br>
 	 * <code>/&lt;base&gt; &lt;? or help&gt; &lt;help-arg&gt;<code><br>
-	 * Example:<br>
-	 * <code>/dd help plugin</code>
+	 * Example:<br><code>/dd help plugin</code>
 	 * @param helpArg - The help info argument
 	 * @param messagePath - The path the the help info message in the plugins lang file
 	 */
@@ -392,8 +450,7 @@ public class DeadmanExecutor implements CommandExecutor {
 	/**
 	 * @param sender - The CommandSender to check for permission
 	 * @param perms - An array of permission nodes to check against the player
-	 * @return true if the sender has at least 1 of the permission nodes, and
-	 * false if they have none
+	 * @return true if the sender has at least 1 of the permission nodes, and false if they have none
 	 */
 	public static boolean hasCommandPerm(CommandSender sender, String[] perms) {
 		Validate.notNull(sender, "sender cannot be null");
@@ -409,17 +466,16 @@ public class DeadmanExecutor implements CommandExecutor {
 	}
 	
 	/**
-	 * This wrapper class is used to combine a registered {@link Command} with
-	 * its cached CommandInfo annotation
+	 * This wrapper class is used to combine a registered {@link Command} with its cached CommandInfo annotation
 	 * @param <T> - The Command that this CommandWrapper contains
 	 * @author Jon
 	 */
-	public static final class CommandWrapper<T extends Command> {
+	public static final class CommandWrapper<C extends Command> {
 		
 		private final CommandInfo info;
-		private final T cmd;
+		private final C cmd;
 		
-		private CommandWrapper(CommandInfo info, T cmd) {
+		private CommandWrapper(CommandInfo info, C cmd) {
 			this.info = info;
 			this.cmd = cmd;
 		}
@@ -428,7 +484,7 @@ public class DeadmanExecutor implements CommandExecutor {
 			return info;
 		}
 		
-		public T getCmd() {
+		public C getCmd() {
 			return cmd;
 		}
 	}
@@ -436,7 +492,7 @@ public class DeadmanExecutor implements CommandExecutor {
 	private class ExecutorListener implements Listener {
 		
 		public void onPlayerQuit(PlayerQuitEvent event) {
-			ConfirmationCommand.removeUser(bukkitCmd, event.getPlayer());
+			ConfirmationCommand.removePlayer(event.getPlayer().getUniqueId());
 		}
 	}
 	

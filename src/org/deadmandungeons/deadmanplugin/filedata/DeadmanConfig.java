@@ -385,7 +385,7 @@ public class DeadmanConfig {
 		String getPath();
 		
 		/**
-		 * @return true if this config value is in list format, and false otherwise
+		 * @return the ValueType of the config value
 		 */
 		ValueType getValueType();
 	}
@@ -400,7 +400,7 @@ public class DeadmanConfig {
 		 */
 		LIST,
 		/**
-		 * Represents a map of configuration keys the configuration values
+		 * Represents a map of configuration keys to configuration values
 		 */
 		MAP
 	}

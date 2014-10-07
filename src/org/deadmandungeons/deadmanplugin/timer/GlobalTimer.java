@@ -66,12 +66,7 @@ public class GlobalTimer extends Timer {
 	 * @return a new LocalTimer object with an amount of elapsed time based on the amount of time passed in this GlobalTimer.
 	 */
 	public LocalTimer toLocalTimer() {
-		long startTime = this.startTime;
-		if (startTime == -1) {
-			long expire = System.currentTimeMillis() + duration;
-			startTime = expire - duration;
-		}
-		long elapsed = System.currentTimeMillis() - startTime;
+		long elapsed = (this.expire > 0 ? System.currentTimeMillis() - (expire - duration) : 0);
 		return new LocalTimer(duration, elapsed);
 	}
 	

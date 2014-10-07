@@ -1,5 +1,7 @@
 package org.deadmandungeons.deadmanplugin;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -253,10 +255,19 @@ public class DeadmanUtils {
 	}
 	
 	
+	public static List<String> toStringList(List<?> list) {
+		List<String> strList = new ArrayList<String>();
+		for (Object value : list) {
+			strList.add(value.toString());
+		}
+		return strList;
+	}
+	
+	
 	public static <T> T getMetadata(Plugin plugin, Metadatable metadatable, String key, Class<T> type) {
 		for (MetadataValue value : metadatable.getMetadata(key)) {
 			if (value.getOwningPlugin().equals(plugin)) {
-				if (type.isAssignableFrom(value.value().getClass())) {
+				if (value.value() != null && type.isAssignableFrom(value.value().getClass())) {
 					return type.cast(value.value());
 				}
 			}
