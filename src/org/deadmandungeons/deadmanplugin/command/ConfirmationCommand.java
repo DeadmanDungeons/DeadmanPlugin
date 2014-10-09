@@ -103,10 +103,27 @@ public abstract class ConfirmationCommand<T> {
 		ConfirmationInfo<?> info = promptedPlayers.get(player.getUniqueId());
 		if (info != null && info.confirmationCmd == this) {
 			T data = type.cast(removePlayer(player.getUniqueId()).data);
-			onTerminate(player, type.cast(removePlayer(player.getUniqueId()).data));
+			onTerminate(player, data);
 			return data;
 		}
 		return null;
+	}
+	
+	/**
+	 * the {@link #onTerminate(Player, Object)} event method will be invoked for the given player
+	 * if they were 'prompted' for this ConfirmationCommand and had the given data object
+	 * @param player - The {@link Player} to be no longer declared as 'prompted'
+	 * @param data - The data object of type T to check against the stored data object for the prompted players
+	 * @return true if the given player was declared as 'prompted' for this ConfirmationCommand and
+	 * had the given data object
+	 */
+	public final boolean removePromptedPlayer(Player player, T data) {
+		ConfirmationInfo<?> info = promptedPlayers.get(player.getUniqueId());
+		if (info != null && info.confirmationCmd == this && ((info.data == null && data == null) || info.data.equals(data))) {
+			onTerminate(player, type.cast(removePlayer(player.getUniqueId()).data));
+			return true;
+		}
+		return false;
 	}
 	
 	/**
@@ -125,6 +142,25 @@ public abstract class ConfirmationCommand<T> {
 			}
 		}
 	}
+	
+	/**
+	 * Remove all 'prompted' players for this ConfirmationCommand that have the given data object,
+	 * and invoke {@link #onTerminate(Player, Object)} for each removed player
+	 */
+	public final void removePromptedPlayers(T data) {
+		Map<UUID, ConfirmationInfo<?>> copy = new HashMap<UUID, ConfirmationInfo<?>>(promptedPlayers);
+		for (UUID uuid : copy.keySet()) {
+			ConfirmationInfo<?> info = promptedPlayers.get(uuid);
+			if (info.confirmationCmd == this && ((info.data == null && data == null) || info.data.equals(data))) {
+				removePlayer(uuid);
+				Player player = Bukkit.getPlayer(uuid);
+				if (player != null) {
+					onTerminate(player, type.cast(info.data));
+				}
+			}
+		}
+	}
+	
 	
 	/**
 	 * @param player - The {@link Player} to check if they are declared as 'prompted'
