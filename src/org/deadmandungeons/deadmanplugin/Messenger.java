@@ -9,6 +9,7 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.lang.Validate;
 import org.bukkit.ChatColor;
 import org.bukkit.Sound;
 import org.bukkit.command.Command;
@@ -19,6 +20,7 @@ import org.deadmandungeons.deadmanplugin.command.CommandInfo;
 import org.deadmandungeons.deadmanplugin.command.DeadmanExecutor;
 import org.deadmandungeons.deadmanplugin.command.DeadmanExecutor.CommandWrapper;
 import org.deadmandungeons.deadmanplugin.command.SubCommandInfo;
+import org.deadmandungeons.deadmanplugin.filedata.PluginFile;
 
 /**
  * A Messaging utility class that makes messaging Players with configured messages easy.
@@ -42,12 +44,39 @@ public class Messenger {
 	private ChatColor secondaryColor;
 	private ChatColor tertiaryColor;
 	
-	private DeadmanPlugin plugin;
+	private final DeadmanPlugin plugin;
+	private PluginFile langFile;
 	
-	public Messenger(DeadmanPlugin plugin) {
+	public Messenger(DeadmanPlugin plugin, PluginFile langFile) {
+		Validate.notNull(plugin, "plugin cannot be null");
+		Validate.notNull(langFile, "langFile cannot be null");
 		this.plugin = plugin;
+		this.langFile = langFile;
 	}
 	
+	/**
+	 * @return the {@link DeadmanPlugin} that this Messenger is for
+	 */
+	public final DeadmanPlugin getPlugin() {
+		return plugin;
+	}
+	
+	/**
+	 * @return the language {@link PluginFile} that this Messenger is using
+	 */
+	public final PluginFile getLangFile() {
+		return langFile;
+	}
+	
+	
+	/**
+	 * @param langFile - the language {@link PluginFile} file to use
+	 */
+	public void setLangFile(PluginFile langFile) {
+		Validate.notNull(langFile, "langFile cannot be null");
+		this.langFile = langFile;
+		clearCache();
+	}
 	
 	/**
 	 * @param path - String path name to the desired message in the plugin's language file
@@ -298,11 +327,21 @@ public class Messenger {
 	}
 	
 	/**
+	 * Clear any cached messages forcing them to pull them from the config again
+	 */
+	public void clearCache() {
+		cachedMessages.clear();
+		primaryColor = null;
+		secondaryColor = null;
+		tertiaryColor = null;
+	}
+	
+	/**
 	 * This will replace any substring matching &[\da-fk-or] with the appropriate ChatColor
 	 * @param message - The message string to inject colors in
 	 * @return the given message with any ChatColors injected
 	 */
-	public String injectColors(String message) {
+	public static String injectColors(String message) {
 		StringBuffer sb = new StringBuffer();
 		if (message != null) {
 			Matcher matcher = FORMAT_PATTERN.matcher(message);
@@ -314,22 +353,12 @@ public class Messenger {
 		return sb.toString();
 	}
 	
-	/**
-	 * Clear any cached messages forcing them to pull them from the config again
-	 */
-	public void clearCache() {
-		cachedMessages.clear();
-		primaryColor = null;
-		secondaryColor = null;
-		tertiaryColor = null;
-	}
-	
 	private String getRawMessage(String path) {
 		String rawMessage = null;
 		if (cachedMessages.containsKey(path)) {
 			rawMessage = cachedMessages.get(path);
 		} else {
-			rawMessage = plugin.getLangFile().getConfig().getString(path);
+			rawMessage = langFile.getConfig().getString(path);
 			cachedMessages.put(path, rawMessage);
 		}
 		if (rawMessage == null) {

@@ -32,11 +32,11 @@ public class PluginFile {
 	 * @param defaultFilePath - The path to the resource file bundled in the plugin's jar
 	 * that should be saved as the file specified by filePath if it does not already exist.
 	 * If this is null, a new file will be created if one does not yet exist at filePath.
-	 * @throws IllegalStateException if the plugin has not yet been initialized
+	 * @throws IllegalStateException if the plugin has not yet been enabled
 	 */
 	public PluginFile(DeadmanPlugin instance, String filePath, String defaultFilePath) {
-		if (!instance.isJavaPluginLoaded()) {
-			throw new IllegalStateException("This plugin has not been loaded yet! Cannot create plugin file before plugin is loaded");
+		if (!instance.isEnabled()) {
+			throw new IllegalStateException("This plugin has not been enabled yet! Cannot create plugin file before plugin is enabled");
 		}
 		this.plugin = instance;
 		this.filePath = plugin.getDataFolder().getPath() + File.separator + filePath;

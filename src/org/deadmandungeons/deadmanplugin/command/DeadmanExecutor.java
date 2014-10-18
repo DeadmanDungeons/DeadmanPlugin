@@ -11,7 +11,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
-import org.bukkit.command.PluginCommand;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventException;
@@ -22,6 +21,7 @@ import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.plugin.EventExecutor;
 import org.deadmandungeons.deadmanplugin.DeadmanPlugin;
 import org.deadmandungeons.deadmanplugin.DeadmanUtils;
+import org.deadmandungeons.deadmanplugin.Messenger;
 import org.deadmandungeons.deadmanplugin.Result;
 import org.deadmandungeons.deadmanplugin.command.Arguments.SubCommand;
 
@@ -47,24 +47,37 @@ public class DeadmanExecutor implements CommandExecutor {
 	private final Map<Class<?>, ArgumentConverter<?>> converters = new HashMap<Class<?>, ArgumentConverter<?>>();
 	
 	private final DeadmanPlugin plugin;
-	private final PluginCommand bukkitCmd;
+	private final Messenger messenger;
 	private final Integer coolDown;
 	
-	public DeadmanExecutor(DeadmanPlugin plugin, String baseCmd) {
-		this(plugin, baseCmd, null);
+	/**
+	 * Construct a DeadmanExecutor with no cooldown time
+	 * @param plugin - The {@link DeadmanPlugin} this executor is for
+	 * @param messenger - The {@link Messenger} to use
+	 * @throws IllegalStateException if the given DeadmanPlugin has not been enabled yet
+	 * @throws IllegalArgumentException if plugin or messenger is null
+	 */
+	public DeadmanExecutor(DeadmanPlugin plugin, Messenger messenger) {
+		this(plugin, messenger, null);
 	}
 	
-	public DeadmanExecutor(DeadmanPlugin plugin, String baseCmd, Integer coolDown) {
-		if (!plugin.isJavaPluginLoaded()) {
-			throw new IllegalStateException("This plugin has not been loaded yet! Cannot construct DeadmanExecutor before plugin is loaded");
+	/**
+	 * @param plugin - The {@link DeadmanPlugin} this executor is for
+	 * @param messenger - The {@link Messenger} to use
+	 * @param coolDown - The cooldown time in seconds that a player must wait before sending another command
+	 * @throws IllegalStateException if the given DeadmanPlugin has not been enabled yet
+	 * @throws IllegalArgumentException if plugin or messenger is null
+	 */
+	public DeadmanExecutor(DeadmanPlugin plugin, Messenger messenger, Integer coolDown) {
+		if (!plugin.isEnabled()) {
+			throw new IllegalStateException("This plugin has not been enabled yet! Cannot construct DeadmanExecutor before plugin is enabled");
 		}
 		Validate.notNull(plugin, "plugin cannot be null");
-		Validate.notNull(baseCmd, "baseCmd cannot be null");
-		Validate.notNull(bukkitCmd = plugin.getCommand(baseCmd), "There is no configured command for the string '" + baseCmd + "'");
+		Validate.notNull(messenger, "messenger cannot be null");
 		
 		this.plugin = plugin;
+		this.messenger = messenger;
 		this.coolDown = (coolDown != null && coolDown < 1 ? null : coolDown);
-		bukkitCmd.setExecutor(this);
 		
 		ExecutorListener listener = new ExecutorListener();
 		Bukkit.getPluginManager().registerEvent(PlayerQuitEvent.class, listener, EventPriority.NORMAL, new EventExecutor() {
@@ -117,20 +130,23 @@ public class DeadmanExecutor implements CommandExecutor {
 	@Override
 	public final boolean onCommand(CommandSender sender, org.bukkit.command.Command bukkitCmd, String label, String[] args) {
 		if (args.length == 0) {
-			plugin.getMessenger().sendPluginInfo(bukkitCmd, sender);
+			messenger.sendPluginInfo(bukkitCmd, sender);
 			return true;
 		}
 		if (args[0].equals("?") || args[0].equalsIgnoreCase("help")) {
 			if (args.length == 2) {
 				if (StringUtils.isNumeric(args[1])) {
-					plugin.getMessenger().sendHelpInfo(bukkitCmd, sender, commands, Integer.parseInt(args[1]));
+					messenger.sendHelpInfo(bukkitCmd, sender, commands, Integer.parseInt(args[1]));
 					return true;
-				} else if (helpInfo.containsKey(args[1].toLowerCase())) {
-					plugin.getMessenger().sendMessage(sender, helpInfo.get(args[1].toLowerCase()));
-					return true;
+				} else {
+					String helpInfoPath = helpInfo.get(args[1].toLowerCase());
+					if (helpInfoPath != null) {
+						messenger.sendMessage(sender, helpInfoPath);
+						return true;
+					}
 				}
 			} else {
-				plugin.getMessenger().sendHelpInfo(bukkitCmd, sender, commands, 1);
+				messenger.sendHelpInfo(bukkitCmd, sender, commands, 1);
 				return true;
 			}
 		}
@@ -160,12 +176,12 @@ public class DeadmanExecutor implements CommandExecutor {
 		
 		CommandWrapper<?> cmdWrapper = getMatchingCommand(args[0]);
 		if (cmdWrapper == null) {
-			plugin.getMessenger().sendMessage(sender, "failed.invalid-args");
+			messenger.sendMessage(sender, "failed.invalid-args");
 			return false;
 		}
 		
 		if (cmdWrapper.info.permissions().length > 0 && !hasCommandPerm(sender, cmdWrapper.info.permissions())) {
-			plugin.getMessenger().sendMessage(sender, "failed.no-permission");
+			messenger.sendMessage(sender, "failed.no-permission");
 			return false;
 		}
 		if (cmdWrapper.info.inGameOnly() && !(sender instanceof Player)) {
@@ -174,15 +190,15 @@ public class DeadmanExecutor implements CommandExecutor {
 		}
 		
 		if (args[args.length - 1].equals("?") || args[args.length - 1].equals("help")) {
-			plugin.getMessenger().sendCommandInfo(bukkitCmd, cmdWrapper.info, sender);
+			messenger.sendCommandInfo(bukkitCmd, cmdWrapper.info, sender);
 			return true;
 		}
 		
 		String[] params = Arrays.copyOfRange(args, 1, args.length);
 		SubCommand subCmd = Arguments.matcher(this).forCommand(cmdWrapper).withStringArgs(params).findMatch();
 		if (subCmd == null) {
-			plugin.getMessenger().sendMessage(sender, "failed.invalid-args-alt");
-			plugin.getMessenger().sendCommandUsage(bukkitCmd, cmdWrapper.info, sender);
+			messenger.sendMessage(sender, "failed.invalid-args-alt");
+			messenger.sendCommandUsage(bukkitCmd, cmdWrapper.info, sender);
 			return false;
 		}
 		if (subCmd.info() != null) {
@@ -191,7 +207,7 @@ public class DeadmanExecutor implements CommandExecutor {
 				return false;
 			}
 			if (!hasCommandPerm(sender, subCmd.info().permissions())) {
-				plugin.getMessenger().sendMessage(sender, "failed.no-permission");
+				messenger.sendMessage(sender, "failed.no-permission");
 				return false;
 			}
 		}
@@ -229,13 +245,6 @@ public class DeadmanExecutor implements CommandExecutor {
 	 */
 	public final DeadmanPlugin getPlugin() {
 		return plugin;
-	}
-	
-	/**
-	 * @return the bukkit {@link PluginCommand} object that represents the base command for DeadmanExecutor
-	 */
-	public final PluginCommand getBukkitCmd() {
-		return bukkitCmd;
 	}
 	
 	/**
@@ -437,15 +446,6 @@ public class DeadmanExecutor implements CommandExecutor {
 		helpInfo.put(arg, messagePath);
 	}
 	
-	public final <C extends Command> void sendCommandInfo(CommandSender sender, Class<C> cmd) {
-		CommandInfo info = getCommandWrapper(cmd).info;
-		plugin.getMessenger().sendCommandInfo(bukkitCmd, info, sender);
-	}
-	
-	public final <C extends Command> void sendCommandUsage(CommandSender sender, Class<C> cmd) {
-		CommandInfo info = getCommandWrapper(cmd).info;
-		plugin.getMessenger().sendCommandUsage(bukkitCmd, info, sender);
-	}
 	
 	/**
 	 * @param sender - The CommandSender to check for permission

@@ -1,7 +1,7 @@
 package org.deadmandungeons.deadmanplugin;
 
 import java.io.File;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.logging.Level;
 
@@ -13,7 +13,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.deadmandungeons.deadmanplugin.filedata.PluginFile;
 
 import com.google.common.collect.ImmutableMap;
 
@@ -26,15 +25,10 @@ public abstract class DeadmanPlugin extends JavaPlugin {
 	public static final String LANG_DIRECTORY = "lang" + File.separator;
 	public static final String DATA_DIRECTORY = "data" + File.separator;
 	
-	private static final Map<Class<? extends DeadmanPlugin>, DeadmanPlugin> plugins = new HashMap<Class<? extends DeadmanPlugin>, DeadmanPlugin>();
-	private static ImmutableMap<Class<? extends DeadmanPlugin>, DeadmanPlugin> immutablePlugins;
-	
-	private final Messenger messenger;
+	private static final Map<Class<? extends DeadmanPlugin>, DeadmanPlugin> plugins = new LinkedHashMap<Class<? extends DeadmanPlugin>, DeadmanPlugin>();
 	
 	private Economy economy;
 	private Permission permissions;
-	
-	private boolean loaded;
 	
 	/**
 	 * no-arg constructor called by the Craftbukkit classloader
@@ -49,58 +43,65 @@ public abstract class DeadmanPlugin extends JavaPlugin {
 		}
 		Bukkit.getLogger().info("Initialized DeadmanPlugin: " + getName());
 		plugins.put(getClass(), this);
-		
-		messenger = new Messenger(this);
-	}
-	
-	
-	/**
-	 * @return an ImmutableMap of all the currently instantiated DeadmanPlugins
-	 * with the plugin Class as the Key, and the DeadmanPlugin instance as the value
-	 */
-	public static final Map<Class<? extends DeadmanPlugin>, DeadmanPlugin> getDeadmanPlugins() {
-		if (immutablePlugins == null || plugins.size() > immutablePlugins.size()) {
-			immutablePlugins = ImmutableMap.copyOf(plugins);
-		}
-		return immutablePlugins;
-	}
-	
-	/**
-	 * @param pluginClass - The extended DeadmanPlugin class of the desired instance
-	 * @return the singleton instance for the given DeadmanPlugin class type
-	 * @throws IllegalStateException if the given DeadmanPlugin type has not been initialized and no instance exists
-	 */
-	public static final <T extends DeadmanPlugin> T getDeadmanPlugin(Class<T> pluginClass) throws IllegalStateException {
-		Validate.notNull(pluginClass, "pluginClass cannot be null");
-		T plugin = pluginClass.cast(plugins.get(pluginClass));
-		if (plugin == null) {
-			String msg = pluginClass.getSimpleName() + "has not been initialized yet! Cannot get plugin instance before plugin is initialized";
-			throw new IllegalStateException(msg);
-		}
-		return plugin;
 	}
 	
 	@Override
 	public final void onLoad() {
-		loaded = true;
+		// this may be used in the future
+		
 		onPluginLoad();
 	}
 	
+	@Override
+	public final void onEnable() {
+		// Add instance to plugin's datastore in case the plugin was disabled and then enabled again
+		if (!plugins.containsKey(getClass())) {
+			plugins.put(getClass(), this);
+		}
+		
+		Bukkit.getScheduler().runTask(this, new Runnable() {
+			
+			@Override
+			public void run() {
+				System.out.println("onFirstServerTick(): " + getName());
+				onFirstServerTick();
+			}
+		});
+		
+		onPluginEnable();
+	}
+	
+	@Override
+	public final void onDisable() {
+		// Free up memory
+		plugins.remove(getClass());
+		
+		onPluginDisable();
+	}
+	
 	/**
-	 * @see org.bukkit.plugin.Plugin#onLoad()
+	 * @see {@link #onLoad()}
 	 */
 	public void onPluginLoad() {}
 	
-	@Override
-	public abstract void onEnable();
-	
-	@Override
-	public abstract void onDisable();
+	/**
+	 * @see {@link #onEnable()}
+	 */
+	public void onPluginEnable() {}
 	
 	/**
-	 * @return the {@link PluginFile} designated for message Strings
+	 * @see {@link #onDisable()}
 	 */
-	public abstract PluginFile getLangFile();
+	public void onPluginDisable() {}
+	
+	/**
+	 * This will be called on the first server tick after the plugin is enabled.
+	 * This is useful when loading saved objects from file that contain World specific
+	 * data because all of the worlds should be loaded at this point. For example,
+	 * plugin's like MultiVerse may be enabled after this plugin is.
+	 */
+	protected void onFirstServerTick() {}
+	
 	
 	public final boolean setupEconomy() {
 		if (economy == null) {
@@ -146,18 +147,28 @@ public abstract class DeadmanPlugin extends JavaPlugin {
 		return permissions;
 	}
 	
+	
 	/**
-	 * @return the {@link Messenger} for this DeadmanPlugin
+	 * @return an ImmutableMap of all the currently instantiated DeadmanPlugins
+	 * with the plugin Class as the Key, and the DeadmanPlugin instance as the value
 	 */
-	public Messenger getMessenger() {
-		return messenger;
+	public static final Map<Class<? extends DeadmanPlugin>, DeadmanPlugin> getDeadmanPlugins() {
+		return ImmutableMap.copyOf(plugins);
 	}
 	
 	/**
-	 * @return true if craftbukkit has loaded this plugin and false otherwise
+	 * @param pluginClass - The extended DeadmanPlugin class of the desired instance
+	 * @return the singleton instance for the given DeadmanPlugin class type
+	 * @throws IllegalStateException if the given DeadmanPlugin type has not been initialized and no instance exists
 	 */
-	public final boolean isJavaPluginLoaded() {
-		return loaded;
+	public static final <T extends DeadmanPlugin> T getDeadmanPlugin(Class<T> pluginClass) throws IllegalStateException {
+		Validate.notNull(pluginClass, "pluginClass cannot be null");
+		T plugin = pluginClass.cast(plugins.get(pluginClass));
+		if (plugin == null) {
+			String msg = pluginClass.getSimpleName() + "has not been initialized yet! Cannot get plugin instance before plugin is initialized";
+			throw new IllegalStateException(msg);
+		}
+		return plugin;
 	}
 	
 }
