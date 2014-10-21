@@ -26,7 +26,7 @@ public @interface SubCommandInfo {
 	/**
 	 * The description of this sub-command
 	 */
-	public String description();
+	public String description() default "";
 	
 	/**
 	 * An array of permission nodes to check before executing the command.

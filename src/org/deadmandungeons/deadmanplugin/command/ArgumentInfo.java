@@ -31,10 +31,19 @@ public @interface ArgumentInfo {
 	public Class<?> varType() default String.class;
 	
 	public static enum ArgType {
+		VARIABLE("<%s>"),
+		OPT_VARIABLE("[%s]"),
+		NON_VARIABLE("%s");
 		
-		VARIABLE,
-		OPT_VARIABLE,
-		NON_VARIABLE;
+		private String wrap;
+		
+		private ArgType(String wrap) {
+			this.wrap = wrap;
+		}
+		
+		public String getWrap() {
+			return wrap;
+		}
 	}
 	
 }

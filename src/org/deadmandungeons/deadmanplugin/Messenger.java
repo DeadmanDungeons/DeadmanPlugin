@@ -16,6 +16,8 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginDescriptionFile;
+import org.deadmandungeons.deadmanplugin.command.ArgumentInfo;
+import org.deadmandungeons.deadmanplugin.command.ArgumentInfo.ArgType;
 import org.deadmandungeons.deadmanplugin.command.CommandInfo;
 import org.deadmandungeons.deadmanplugin.command.DeadmanExecutor;
 import org.deadmandungeons.deadmanplugin.command.DeadmanExecutor.CommandWrapper;
@@ -180,7 +182,8 @@ public class Messenger {
 			if (DeadmanExecutor.hasCommandPerm(sender, cmdInfo.permissions())) {
 				String arguments = "";
 				for (int i = 0; i < cmdInfo.arguments().length; i++) {
-					arguments += (i > 0 ? " " : "") + cmdInfo.arguments()[i].argName();
+					ArgumentInfo argInfo = cmdInfo.arguments()[i];
+					arguments += (i > 0 ? " " : "") + String.format(argInfo.argType().getWrap(), argInfo.argName());
 				}
 				sender.sendMessage(getSecondaryColor() + "  /" + bukkitCmd.getName() + " " + info.name() + " " + arguments);
 				if (cmdInfo.description() != null && !cmdInfo.description().trim().isEmpty()) {
@@ -359,6 +362,12 @@ public class Messenger {
 			rawMessage = cachedMessages.get(path);
 		} else {
 			rawMessage = langFile.getConfig().getString(path);
+			if (rawMessage == null) {
+				rawMessage = langFile.getConfig().getDefaults().getString(path);
+				if (rawMessage != null) {
+					plugin.getLogger().log(Level.WARNING, "Missing message at path '" + path + "' from lang file! default message will be used");
+				}
+			}
 			cachedMessages.put(path, rawMessage);
 		}
 		if (rawMessage == null) {

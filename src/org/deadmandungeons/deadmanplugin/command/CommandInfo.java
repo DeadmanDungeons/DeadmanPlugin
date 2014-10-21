@@ -28,7 +28,7 @@ public @interface CommandInfo {
 	/**
 	 * A description of what the command does.
 	 */
-	public String description();
+	public String description() default "";
 	
 	/**
 	 * An array of permission nodes to check before executing this command and any of its sub commands.
