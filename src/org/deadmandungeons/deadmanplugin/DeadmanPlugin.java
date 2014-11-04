@@ -63,8 +63,10 @@ public abstract class DeadmanPlugin extends JavaPlugin {
 			
 			@Override
 			public void run() {
-				System.out.println("onFirstServerTick(): " + getName());
-				onFirstServerTick();
+				if (isEnabled()) {
+					System.out.println("onFirstServerTick(): " + getName());
+					onFirstServerTick();
+				}
 			}
 		});
 		

@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.logging.Level;
 
 import org.apache.commons.lang.Validate;
+import org.apache.commons.lang.math.NumberUtils;
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.inventory.ItemStack;
@@ -308,6 +309,19 @@ public class DeadmanConfig {
 				return obj.toString();
 			}
 		});
+		registerConverter(Number.class, new Converter<Number>() {
+			
+			@Override
+			public Number convert(Object obj) {
+				if (obj instanceof Number) {
+					return (Number) obj;
+				} else if (NumberUtils.isNumber(obj.toString())) {
+					return NumberUtils.createNumber(obj.toString());
+				}
+				return null;
+			}
+		});
+		// TODO remove this converter once RealEstateMarket is updated, and switch to use Number instead
 		registerConverter(Integer.class, new Converter<Integer>() {
 			
 			@Override

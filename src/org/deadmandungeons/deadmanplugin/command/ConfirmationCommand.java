@@ -44,7 +44,7 @@ public abstract class ConfirmationCommand<T> {
 	 * @param type - The Class of the data object that should be stored when a player is prompted
 	 * @throws IllegalArgumentException if plugin or type is null
 	 */
-	public ConfirmationCommand(DeadmanPlugin plugin, Class<T> type) {
+	public ConfirmationCommand(DeadmanPlugin plugin, Class<? super T> type) {
 		this(plugin, type, -1);
 	}
 	
@@ -54,11 +54,13 @@ public abstract class ConfirmationCommand<T> {
 	 * @param timeout - The time in seconds that a player has to either confirm or decline when they have been prompted
 	 * @throws IllegalArgumentException if plugin or type is null
 	 */
-	public ConfirmationCommand(DeadmanPlugin plugin, Class<T> type, int timeout) {
+	@SuppressWarnings("unchecked")
+	public ConfirmationCommand(DeadmanPlugin plugin, Class<? super T> type, int timeout) {
 		Validate.notNull(plugin, "plugin cannot be null");
 		Validate.notNull(type, "type cannot be null");
 		this.plugin = plugin;
-		this.type = type;
+		// This cast is type safe, and all cases where type.cast is called is also type safe
+		this.type = (Class<T>) type;
 		this.timeout = timeout;
 	}
 	
@@ -169,6 +171,15 @@ public abstract class ConfirmationCommand<T> {
 	public final boolean isPlayerPrompted(Player player) {
 		ConfirmationInfo<?> info = promptedPlayers.get(player.getUniqueId());
 		return info != null && info.confirmationCmd == this;
+	}
+	
+	/**
+	 * @param player - The 'prompted' {@link Player} with the desired stored data
+	 * @return the data object of type T that was stored for the given player, or null if the given player was not declared as 'prompted'
+	 */
+	public final T getStoredData(Player player) {
+		ConfirmationInfo<?> info = promptedPlayers.get(player.getUniqueId());
+		return (info != null ? type.cast(info.data) : null);
 	}
 	
 	
