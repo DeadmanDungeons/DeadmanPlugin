@@ -88,7 +88,7 @@ public abstract class ConfirmationCommand<T> {
 		}
 		ConfirmationInfo<?> previousInfo = removePlayer(player.getUniqueId());
 		if (previousInfo != null) {
-			decline(player, previousInfo);
+			previousInfo.confirmationCmd.terminate(player, previousInfo);
 		}
 		
 		ConfirmationInfo<T> info = new ConfirmationInfo<T>(this, data, task);
@@ -206,24 +206,34 @@ public abstract class ConfirmationCommand<T> {
 	
 	
 	/**
+	 * Override this to handle when a player accepts the confirmation
 	 * @param player - The prompted {@link Player} that confirmed
 	 * @param data - The data object of type T that was stored for this player when they were prompted
 	 */
-	protected abstract void onAccept(Player player, T data);
+	protected void onAccept(Player player, T data) {}
 	
 	/**
+	 * Override this to handle when a player declines the confirmation
 	 * @param player - The prompted {@link Player} that declined
 	 * @param data - The data object of type T that was stored for this player when they were prompted
 	 */
-	protected abstract void onDecline(Player player, T data);
+	protected void onDecline(Player player, T data) {}
 	
 	/**
+	 * Override this to handle when a player times out from responding to the confirmation
 	 * @param player - The prompted {@link Player} that failed to confirm/decline in the specified timeout
 	 * @param data - The data object of type T that was stored for this player when they were prompted
 	 */
-	protected abstract void onTimeout(Player player, T data);
+	protected void onTimeout(Player player, T data) {}
 	
-	protected abstract void onTerminate(Player player, T data);
+	/**
+	 * Override this to handle when this ConfrimationCommand terminates the confirmation for a player.
+	 * This will only happen if a plugin removes the prompted player from the confirmation,
+	 * or if a plugin adds the prompted player to a different confirmation.
+	 * @param player - The prompted {@link Player} that was terminated from the confirmation
+	 * @param data - The data object of type T that was stored for this player when they were prompted
+	 */
+	protected void onTerminate(Player player, T data) {}
 	
 	
 	static ConfirmationInfo<?> removePlayer(UUID uuid) {
@@ -251,6 +261,10 @@ public abstract class ConfirmationCommand<T> {
 	
 	private void decline(Player player, ConfirmationInfo<?> info) {
 		onDecline(player, type.cast(info.data));
+	}
+	
+	private void terminate(Player player, ConfirmationInfo<?> info) {
+		onTerminate(player, type.cast(info.data));
 	}
 	
 	

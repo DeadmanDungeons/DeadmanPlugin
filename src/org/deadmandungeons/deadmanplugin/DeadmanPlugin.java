@@ -84,17 +84,17 @@ public abstract class DeadmanPlugin extends JavaPlugin {
 	/**
 	 * @see {@link #onLoad()}
 	 */
-	public void onPluginLoad() {}
+	protected void onPluginLoad() {}
 	
 	/**
 	 * @see {@link #onEnable()}
 	 */
-	public void onPluginEnable() {}
+	protected void onPluginEnable() {}
 	
 	/**
 	 * @see {@link #onDisable()}
 	 */
-	public void onPluginDisable() {}
+	protected void onPluginDisable() {}
 	
 	/**
 	 * This will be called on the first server tick after the plugin is enabled.
