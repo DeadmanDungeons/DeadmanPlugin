@@ -65,7 +65,7 @@ public class DeadmanConfig {
 	 * @throws IllegalStateException if a converter for the specified type has not been registered,
 	 * or if a config value is either missing from the default configuration file or invalid based of the specified type
 	 */
-	public <E extends Enum<E> & ConfigEnum<E, T>, T> void loadValues(Class<E> enumClass, Class<T> type) throws IllegalStateException {
+	public <E extends Enum<E> & ConfigEnum<E, T>, T> void loadValues(Class<E> enumClass, Class<? super T> type) throws IllegalStateException {
 		Validate.notNull(enumClass);
 		Validate.notNull(type);
 		Validate.notNull(values);
@@ -218,7 +218,7 @@ public class DeadmanConfig {
 	}
 	
 	
-	private <T> T getValue(Class<T> type, Converter<T> converter, String path) {
+	private <T> T getValue(Class<? super T> type, Converter<T> converter, String path) {
 		T value = null;
 		Object val = plugin.getConfig().get(path);
 		if (val != null) {
@@ -234,7 +234,7 @@ public class DeadmanConfig {
 		return value;
 	}
 	
-	private <T> List<T> getList(Class<T> type, Converter<T> converter, String path) {
+	private <T> List<T> getList(Class<? super T> type, Converter<T> converter, String path) {
 		List<T> list = null;
 		List<?> vals = plugin.getConfig().getList(path);
 		if (vals != null) {
@@ -265,7 +265,7 @@ public class DeadmanConfig {
 		return listBuilder.build();
 	}
 	
-	private <T> Map<String, T> getMap(Class<T> type, Converter<T> converter, String path) {
+	private <T> Map<String, T> getMap(Class<? super T> type, Converter<T> converter, String path) {
 		Map<String, T> map = null;
 		ConfigurationSection section = plugin.getConfig().getConfigurationSection(path);
 		if (section != null) {

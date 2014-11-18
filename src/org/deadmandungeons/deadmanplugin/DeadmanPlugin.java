@@ -54,31 +54,27 @@ public abstract class DeadmanPlugin extends JavaPlugin {
 	
 	@Override
 	public final void onEnable() {
-		// Add instance to plugin's datastore in case the plugin was disabled and then enabled again
-		if (!plugins.containsKey(getClass())) {
-			plugins.put(getClass(), this);
-		}
+		onPluginEnable();
 		
-		Bukkit.getScheduler().runTask(this, new Runnable() {
-			
-			@Override
-			public void run() {
-				if (isEnabled()) {
+		if (isEnabled()) {
+			// Run after onPluginEnable to assure that it completed without unhandled errors
+			Bukkit.getScheduler().runTask(this, new Runnable() {
+				
+				@Override
+				public void run() {
 					System.out.println("onFirstServerTick(): " + getName());
 					onFirstServerTick();
 				}
-			}
-		});
-		
-		onPluginEnable();
+			});
+		}
 	}
 	
 	@Override
 	public final void onDisable() {
+		onPluginDisable();
+		
 		// Free up memory
 		plugins.remove(getClass());
-		
-		onPluginDisable();
 	}
 	
 	/**

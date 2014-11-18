@@ -1,7 +1,9 @@
 package org.deadmandungeons.deadmanplugin.command;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.UUID;
 
 import org.apache.commons.lang.Validate;
@@ -66,37 +68,30 @@ public abstract class ConfirmationCommand<T> {
 	
 	
 	/**
-	 * @param sender - The {@link Player} to be declared as 'prompted' for this ConfirmationCommand
+	 * The given player will be removed from any current confirmations.
+	 * If the given player is currently 'prompted', the {@link #onTerminate(Player, Object)} event method
+	 * of the ConfirmationCommand that the given player is 'prompted' for will be invoked
+	 * @param player - The {@link Player} to be declared as 'prompted' for this ConfirmationCommand
 	 * @param data - The data object of type T to be stored for the given prompted player
 	 * @throws IllegalArgumentException if player is null
 	 */
-	public final void addPromptedPlayer(final Player player, T data) {
-		Validate.notNull(player, "player cannot be null");
-		BukkitTask task = null;
-		if (timeout > 0) {
-			task = Bukkit.getScheduler().runTaskLater(plugin, new Runnable() {
-				
-				@Override
-				public void run() {
-					ConfirmationInfo<?> info = promptedPlayers.remove(player.getUniqueId());
-					if (info != null) {
-						// This is type safe because this task will be canceled if the player is added to a different ConfirmationCommand
-						onTimeout(player, type.cast(info.data));
-					}
-				}
-			}, timeout * 20);
-		}
-		ConfirmationInfo<?> previousInfo = removePlayer(player.getUniqueId());
-		if (previousInfo != null) {
-			previousInfo.confirmationCmd.terminate(player, previousInfo);
-		}
-		
-		ConfirmationInfo<T> info = new ConfirmationInfo<T>(this, data, task);
-		promptedPlayers.put(player.getUniqueId(), info);
+	public final void addPromptedPlayer(Player player, T data) {
+		addPlayer(player, data, false);
 	}
 	
 	/**
-	 * the {@link #onTerminate(Player, Object)} event method will be invoked for the given player
+	 * The given player will be removed from any current confirmations, but the {@link #onTerminate(Player, Object)} event
+	 * method of the ConfirmationCommand will <b>not</b> be called.
+	 * @param player - The {@link Player} to be declared as 'prompted' for this ConfirmationCommand
+	 * @param data - The data object of type T to be stored for the given prompted player
+	 * @throws IllegalArgumentException if player is null
+	 */
+	public final void addPromptedPlayerSilently(Player player, T data) {
+		addPlayer(player, data, true);
+	}
+	
+	/**
+	 * The {@link #onTerminate(Player, Object)} event method will be invoked for the given player
 	 * if they were 'prompted' for this ConfirmationCommand
 	 * @param player - The {@link Player} to be no longer declared as 'prompted'
 	 * @return the data object of type T that was stored for the removed player, or null if the given player was not declared as 'prompted'
@@ -112,16 +107,16 @@ public abstract class ConfirmationCommand<T> {
 	}
 	
 	/**
-	 * the {@link #onTerminate(Player, Object)} event method will be invoked for the given player
+	 * The {@link #onTerminate(Player, Object)} event method will be invoked for the given player
 	 * if they were 'prompted' for this ConfirmationCommand and had the given data object
 	 * @param player - The {@link Player} to be no longer declared as 'prompted'
-	 * @param data - The data object of type T to check against the stored data object for the prompted players
+	 * @param data - The data object of type T to check against the stored data object for the given player
 	 * @return true if the given player was declared as 'prompted' for this ConfirmationCommand and
 	 * had the given data object
 	 */
 	public final boolean removePromptedPlayer(Player player, T data) {
 		ConfirmationInfo<?> info = promptedPlayers.get(player.getUniqueId());
-		if (info != null && info.confirmationCmd == this && ((info.data == null && data == null) || info.data.equals(data))) {
+		if (info != null && info.confirmationCmd == this && ((info.data == null && data == null) || (data != null && data.equals(info.data)))) {
 			onTerminate(player, type.cast(removePlayer(player.getUniqueId()).data));
 			return true;
 		}
@@ -132,8 +127,7 @@ public abstract class ConfirmationCommand<T> {
 	 * Remove all 'prompted' players for this ConfirmationCommand, and invoke {@link #onTerminate(Player, Object)} for each removed player
 	 */
 	public final void removePromptedPlayers() {
-		Map<UUID, ConfirmationInfo<?>> copy = new HashMap<UUID, ConfirmationInfo<?>>(promptedPlayers);
-		for (UUID uuid : copy.keySet()) {
+		for (UUID uuid : new ArrayList<UUID>(promptedPlayers.keySet())) {
 			ConfirmationInfo<?> info = promptedPlayers.get(uuid);
 			if (info.confirmationCmd == this) {
 				removePlayer(uuid);
@@ -148,12 +142,12 @@ public abstract class ConfirmationCommand<T> {
 	/**
 	 * Remove all 'prompted' players for this ConfirmationCommand that have the given data object,
 	 * and invoke {@link #onTerminate(Player, Object)} for each removed player
+	 * @param data - The data object of type T to check against the stored data object for the prompted players
 	 */
 	public final void removePromptedPlayers(T data) {
-		Map<UUID, ConfirmationInfo<?>> copy = new HashMap<UUID, ConfirmationInfo<?>>(promptedPlayers);
-		for (UUID uuid : copy.keySet()) {
+		for (UUID uuid : new ArrayList<UUID>(promptedPlayers.keySet())) {
 			ConfirmationInfo<?> info = promptedPlayers.get(uuid);
-			if (info.confirmationCmd == this && ((info.data == null && data == null) || info.data.equals(data))) {
+			if (info.confirmationCmd == this && ((info.data == null && data == null) || (data != null && data.equals(info.data)))) {
 				removePlayer(uuid);
 				Player player = Bukkit.getPlayer(uuid);
 				if (player != null) {
@@ -180,6 +174,38 @@ public abstract class ConfirmationCommand<T> {
 	public final T getStoredData(Player player) {
 		ConfirmationInfo<?> info = promptedPlayers.get(player.getUniqueId());
 		return (info != null ? type.cast(info.data) : null);
+	}
+	
+	/**
+	 * @return a new map containing all the 'prompted' players for this ConfirmationCommand with their UUID as the key,
+	 * and the stored data object as the value
+	 */
+	public final Map<UUID, T> getPromptedPlayers() {
+		Map<UUID, T> players = new HashMap<UUID, T>();
+		for (Entry<UUID, ConfirmationInfo<?>> entry : promptedPlayers.entrySet()) {
+			if (entry.getValue().confirmationCmd == this) {
+				players.put(entry.getKey(), type.cast(entry.getValue().data));
+			}
+		}
+		return players;
+	}
+	
+	/**
+	 * Force the given 'prompted' player to accept the confirmation
+	 * @param player - The 'prompted' {@link Player} for this ConfirmationCommand to force a response on
+	 * @return true if the given player was prompted for this ConfirmationCommand and accepted the confirmation, and false otherwise
+	 */
+	public boolean forceAccept(Player player) {
+		return isPlayerPrompted(player) && acceptCommand.execute(player);
+	}
+	
+	/**
+	 * Force the given 'prompted' player to decline the confirmation
+	 * @param player - The 'prompted' {@link Player} for this ConfirmationCommand to force a response on
+	 * @return true if the given player was prompted for this ConfirmationCommand and declined the confirmation, and false otherwise
+	 */
+	public boolean forceDecline(Player player) {
+		return isPlayerPrompted(player) && declineCommand.execute(player);
 	}
 	
 	
@@ -236,6 +262,14 @@ public abstract class ConfirmationCommand<T> {
 	protected void onTerminate(Player player, T data) {}
 	
 	
+	static PseudoCommand getAcceptCommand() {
+		return acceptCommand;
+	}
+	
+	static PseudoCommand getDeclineCommand() {
+		return declineCommand;
+	}
+	
 	static ConfirmationInfo<?> removePlayer(UUID uuid) {
 		ConfirmationInfo<?> info = promptedPlayers.remove(uuid);
 		if (info != null) {
@@ -247,12 +281,30 @@ public abstract class ConfirmationCommand<T> {
 		return null;
 	}
 	
-	static PseudoCommand getAcceptCommand() {
-		return acceptCommand;
-	}
 	
-	static PseudoCommand getDeclineCommand() {
-		return declineCommand;
+	private void addPlayer(final Player player, T data, boolean silent) {
+		Validate.notNull(player, "player cannot be null");
+		BukkitTask task = null;
+		if (timeout > 0) {
+			task = Bukkit.getScheduler().runTaskLater(plugin, new Runnable() {
+				
+				@Override
+				public void run() {
+					ConfirmationInfo<?> info = promptedPlayers.remove(player.getUniqueId());
+					if (info != null) {
+						// This is type safe because this task will be canceled if the player is added to a different ConfirmationCommand
+						onTimeout(player, type.cast(info.data));
+					}
+				}
+			}, timeout * 20);
+		}
+		ConfirmationInfo<?> previousInfo = removePlayer(player.getUniqueId());
+		if (!silent && previousInfo != null) {
+			previousInfo.confirmationCmd.terminate(player, previousInfo);
+		}
+		
+		ConfirmationInfo<T> info = new ConfirmationInfo<T>(this, data, task);
+		promptedPlayers.put(player.getUniqueId(), info);
 	}
 	
 	private void accept(Player player, ConfirmationInfo<?> info) {

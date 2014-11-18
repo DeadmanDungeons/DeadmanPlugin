@@ -188,12 +188,12 @@ public class DeadmanUtils {
 	public static Sign getSignState(Block block, MaterialData data) {
 		Sign sign = null;
 		if (block != null) {
-			if (block.getType().equals(Material.SIGN_POST) || block.getType().equals(Material.WALL_SIGN)) {
+			if (block.getType() == Material.SIGN_POST || block.getType() == Material.WALL_SIGN) {
 				sign = (Sign) block.getState();
 			}
 			if (sign == null && data != null) {
 				boolean success = block.setTypeIdAndData(data.getItemTypeId(), data.getData(), true);
-				if (success && (block.getType().equals(Material.SIGN_POST) || block.getType().equals(Material.WALL_SIGN))) {
+				if (success && (block.getType() == Material.SIGN_POST || block.getType() == Material.WALL_SIGN)) {
 					sign = (Sign) block.getState();
 				}
 			}

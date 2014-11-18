@@ -17,6 +17,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.material.MaterialData;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.deadmandungeons.deadmanplugin.filedata.DataEntry;
 
@@ -38,6 +39,8 @@ public abstract class DeadmanSign<T extends SignObject> {
 	private final DataEntry dataEntry;
 	private final T signObject;
 	
+	private final MaterialData materialData;
+	
 	public DeadmanSign(Sign sign, DataEntry dataEntry, T signObject) {
 		if (!handlers.containsKey(getClass())) {
 			throw new IllegalStateException("A DeadmanSignHandler has not been set for the " + getClass().getCanonicalName());
@@ -48,13 +51,15 @@ public abstract class DeadmanSign<T extends SignObject> {
 		this.sign = sign;
 		this.dataEntry = dataEntry;
 		this.signObject = signObject;
+		materialData = sign.getData();
 	}
 	
 	/**
 	 * @return The bukkit {@link Sign} object
 	 */
 	public Sign getSign() {
-		return sign;
+		// return the current state of the stored sign because BlockState is not persistent
+		return DeadmanUtils.getSignState(sign.getBlock(), materialData);
 	}
 	
 	/**
@@ -75,6 +80,7 @@ public abstract class DeadmanSign<T extends SignObject> {
 	 * This method should be used to update the lines on the bukkit {@link Sign Sign}
 	 */
 	public void update() {
+		Sign sign = getSign();
 		String[] lines = getLines();
 		for (int i = 0; i < lines.length && i < 4; i++) {
 			sign.setLine(i, lines[i]);

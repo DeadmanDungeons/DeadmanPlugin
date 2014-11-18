@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
@@ -121,7 +122,7 @@ public class DeadmanExecutor implements CommandExecutor {
 			
 			@Override
 			public Result<Boolean> convertCommandArg(String argName, String arg) {
-				Boolean bool = (arg.equalsIgnoreCase("true") || arg.equalsIgnoreCase("false") ? Boolean.parseBoolean(arg) : null);
+				Boolean bool = BooleanUtils.toBooleanObject(arg);
 				return bool != null ? new Result<Boolean>(bool) : new Result<Boolean>(String.format(NOT_BOOLEAN, arg));
 			}
 		});
