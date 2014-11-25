@@ -40,6 +40,7 @@ public class DeadmanExecutor implements CommandExecutor {
 	private static final String NOT_CHATCOLOR = "'%s' is not a valid Minecraft Color";
 	private static final String NOT_DURATION = "The time duration match the format of #m:#h:#d and cannot be equal to zero minutes";
 	private static final String NOT_BOOLEAN = "'%s' is not a boolean. Argument must be either 'true' or 'false'";
+	private static final String IGNORE_CASE = "(?i:%s)";
 	
 	private final Map<Class<?>, CommandWrapper<?>> commands = new LinkedHashMap<Class<?>, CommandWrapper<?>>();
 	private final Map<Class<?>, ConfirmationCommand<?>> confirmationCommands = new HashMap<Class<?>, ConfirmationCommand<?>>();
@@ -224,11 +225,11 @@ public class DeadmanExecutor implements CommandExecutor {
 	
 	private CommandWrapper<?> getMatchingCommand(String arg) {
 		for (CommandWrapper<?> cmdWrapper : commands.values()) {
-			if (arg.matches(cmdWrapper.info.pattern())) {
+			CommandInfo info = cmdWrapper.info;
+			if (info.name().equalsIgnoreCase(arg) || arg.matches(String.format(IGNORE_CASE, StringUtils.join(info.aliases(), '|')))) {
 				return cmdWrapper;
 			}
 		}
-		
 		return null;
 	}
 	
@@ -296,8 +297,8 @@ public class DeadmanExecutor implements CommandExecutor {
 	
 	private <C extends Command> CommandInfo getCommandInfo(Class<C> commandClass) {
 		CommandInfo info = commandClass.getAnnotation(CommandInfo.class);
-		if (info == null || info.name() == null || info.pattern() == null) {
-			String msg = "The '%s' command must be annotated with the CommandInfo annotation, and the name, and pattern cannot be null";
+		if (info == null || info.name() == null || !info.name().matches("^\\S*$")) {
+			String msg = "The '%s' command must be annotated with the CommandInfo annotation, and the name cannot be null or contain whitespace";
 			throw new IllegalStateException(String.format(msg, commandClass.getCanonicalName()));
 		}
 		return info;

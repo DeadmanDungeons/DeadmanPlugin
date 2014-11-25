@@ -16,14 +16,15 @@ import java.lang.annotation.Target;
 public @interface CommandInfo {
 	
 	/**
-	 * The actual name of the command.
+	 * The actual name of the command, and the String to be used to match against ignoring case.
 	 */
 	public String name();
 	
 	/**
-	 * A regex pattern that allows minor oddities and alternatives to the command name.
+	 * An array of aliases of alternatives to the command name.
+	 * default = an empty String array
 	 */
-	public String pattern();
+	public String[] aliases() default {};
 	
 	/**
 	 * A description of what the command does.

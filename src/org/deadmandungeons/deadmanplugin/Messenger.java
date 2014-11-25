@@ -9,6 +9,7 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
 import org.bukkit.ChatColor;
 import org.bukkit.Sound;
@@ -17,7 +18,6 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.deadmandungeons.deadmanplugin.command.ArgumentInfo;
-import org.deadmandungeons.deadmanplugin.command.ArgumentInfo.ArgType;
 import org.deadmandungeons.deadmanplugin.command.CommandInfo;
 import org.deadmandungeons.deadmanplugin.command.DeadmanExecutor;
 import org.deadmandungeons.deadmanplugin.command.DeadmanExecutor.CommandWrapper;
@@ -162,7 +162,7 @@ public class Messenger {
 	 * @param sender - The Command Sender to send the command info to
 	 */
 	public void sendCommandInfo(Command bukkitCmd, CommandInfo info, CommandSender sender) {
-		sender.sendMessage(ChatColor.BOLD + "" + getPrimaryColor() + info.name() + " Command");
+		sender.sendMessage(getPrimaryColor() + info.name() + " Command");
 		sendCommandUsage(bukkitCmd, info, sender);
 	}
 	
@@ -171,12 +171,16 @@ public class Messenger {
 	 * @param sender - The Command Sender to send the command info to
 	 */
 	public void sendCommandUsage(Command bukkitCmd, CommandInfo info, CommandSender sender) {
+		if (info.aliases().length > 0) {
+			sender.sendMessage(getTertiaryColor() + "  ALIASES: " + StringUtils.join(info.aliases(), ", "));
+		}
+		String baseCmd = getSecondaryColor() + "  /" + bukkitCmd.getName() + " " + info.name().toLowerCase();
 		SubCommandInfo[] commands = info.subCommands();
 		if (commands.length == 0) {
-			sender.sendMessage(getSecondaryColor() + "  /" + bukkitCmd.getName() + " " + info.name());
+			sender.sendMessage(baseCmd);
 		}
 		if (info.description() != null && !info.description().trim().isEmpty()) {
-			sender.sendMessage(getTertiaryColor() + "    - " + info.description());
+			sender.sendMessage(getTertiaryColor() + "  - " + info.description());
 		}
 		for (SubCommandInfo cmdInfo : commands) {
 			if (DeadmanExecutor.hasCommandPerm(sender, cmdInfo.permissions())) {
@@ -185,7 +189,7 @@ public class Messenger {
 					ArgumentInfo argInfo = cmdInfo.arguments()[i];
 					arguments += (i > 0 ? " " : "") + String.format(argInfo.argType().getWrap(), argInfo.argName());
 				}
-				sender.sendMessage(getSecondaryColor() + "  /" + bukkitCmd.getName() + " " + info.name() + " " + arguments);
+				sender.sendMessage(baseCmd + " " + arguments);
 				if (cmdInfo.description() != null && !cmdInfo.description().trim().isEmpty()) {
 					sender.sendMessage(getTertiaryColor() + "    - " + cmdInfo.description());
 				}
@@ -193,6 +197,7 @@ public class Messenger {
 		}
 	}
 	
+	// TODO calculate pages based on the amount of subcommands rather than full commands to make more evenly distributed
 	/**
 	 * Only commands that the CommandSender has permissions for will be displayed. 5 commands
 	 * are displayed per page.
