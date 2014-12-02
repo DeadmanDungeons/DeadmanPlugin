@@ -16,7 +16,7 @@ import org.deadmandungeons.deadmanplugin.DeadmanPlugin;
  */
 public class TimerScheduler implements Runnable {
 	
-	private final long TWO_MINUTES_IN_MILLIS = 120000;
+	private final long TWO_MINUTES_IN_MILLIS = Timer.ONE_MINUTE_IN_MILLIS * 2;
 	private final long MINUTE_IN_TICKS = 1200;
 	private final long SECOND_IN_TICKS = 20;
 	

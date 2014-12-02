@@ -10,6 +10,9 @@ import org.deadmandungeons.deadmanplugin.DeadmanUtils;
  */
 public abstract class Timer {
 	
+	public static final int ONE_MINUTE_IN_MILLIS = 60000;
+	public static final int ONE_HOUR_IN_MILLIS = ONE_MINUTE_IN_MILLIS * 60;
+	
 	protected final long duration;
 	
 	protected Timer(long duration) {

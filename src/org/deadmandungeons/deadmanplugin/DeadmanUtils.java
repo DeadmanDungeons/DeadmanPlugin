@@ -38,9 +38,19 @@ public class DeadmanUtils {
 	// no private constructor to allow this util class to be extended
 	
 	/**
-	 * This will return a rounded String representation of the given duration in milliseconds.
+	 * This will return a rounded String representation of the given duration in milliseconds
+	 * with a minimum of 1 time unit and a maximum of 2 time units.<br>
+	 * Examples:
+	 * <ul>
+	 * <li>3785300: 1 hr, 3 min</li>
+	 * <li>81074000: 22 hrs, 31 min</li>
+	 * <li>97440000: 1 day, 3 hrs</li>
+	 * <li>478200: 7 minutes</li>
+	 * <li>18056000: 5 hours</li>
+	 * </ul>
 	 * @param millis - The amount of time in milliseconds
-	 * @return - the amount of time passed in the format of: # days, # hrs, # mins, #seconds
+	 * @return - the amount of time passed in the format of:<br>
+	 * # day(s), # (hour|hr)(s), # (minute|min)(s), # second(s)
 	 */
 	public static String getDurationString(long millis) {
 		String formattedTimer = "";
@@ -51,7 +61,7 @@ public class DeadmanUtils {
 		long seconds = TimeUnit.MILLISECONDS.toSeconds(millis) - (TimeUnit.MILLISECONDS.toMinutes(millis) * 60);
 		
 		if (days != 0) {
-			formattedTimer += days + " days";
+			formattedTimer += days + " day" + (days > 1 ? "s" : "");
 		}
 		if (hours != 0) {
 			String unit = (days > 0 || (days == 0 && minutes > 0) ? " hr" : " hour") + (hours > 1 ? "s" : "");
@@ -115,8 +125,7 @@ public class DeadmanUtils {
 	}
 	
 	public static String getOrdinalSuffix(int value) {
-		int remainder = value % 10;
-		switch (remainder) {
+		switch (value % 10) {
 			case 1:
 				return value + "st";
 			case 2:

@@ -3,6 +3,7 @@ package org.deadmandungeons.deadmanplugin;
 import java.util.UUID;
 
 import org.apache.commons.lang.builder.HashCodeBuilder;
+import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.deadmandungeons.deadmanplugin.filedata.DataEntry;
 import org.deadmandungeons.deadmanplugin.filedata.DataEntry.Key;
@@ -38,6 +39,34 @@ public class PlayerID {
 	
 	public String getUsername() {
 		return username;
+	}
+	
+	public OfflinePlayer getOfflinePlayer() {
+		return Bukkit.getOfflinePlayer(uuid);
+	}
+	
+	/**
+	 * @param player - the player to check identity equality
+	 * @return true if the given player is not null and its uuid equals the uuid of this PlayerID
+	 */
+	public boolean equalsPlayer(OfflinePlayer player) {
+		return player != null && equals(player.getUniqueId());
+	}
+	
+	/**
+	 * @param uuid - the uuid of the Player to check identity equality
+	 * @return true if the given uuid is not null and it equals the uuid of this PlayerID
+	 */
+	public boolean equalsUUID(UUID uuid) {
+		return uuid != null && this.uuid.equals(uuid);
+	}
+	
+	/**
+	 * @param username - the username of the Player to check identity equality
+	 * @return true if the given username is not null and it equals the username of this PlayerID ignoring case
+	 */
+	public boolean equalsUsername(String username) {
+		return username != null && this.username.equalsIgnoreCase(username);
 	}
 	
 	@Override

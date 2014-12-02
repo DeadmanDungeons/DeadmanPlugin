@@ -140,9 +140,10 @@ public class Messenger {
 	
 	/**
 	 * This method calls {@link #sendMessage(CommandSender, String, Object...) sendMessage()} but
-	 * with a success sound played to the CommandSender if the sender is a player
+	 * with a 2 successive 'ding' sounds played to the CommandSender if the sender is a player
+	 * that will get their attention
 	 */
-	public void sendSuccessMessage(CommandSender sender, String path, Object... vars) {
+	public void sendImportantMessage(CommandSender sender, String path, Object... vars) {
 		sendMessage(sender, path, vars);
 		if (sender instanceof Player) {
 			final Player player = (Player) sender;
