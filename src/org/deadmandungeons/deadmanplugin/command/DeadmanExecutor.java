@@ -220,7 +220,10 @@ public class DeadmanExecutor implements CommandExecutor {
 			return false;
 		}
 		
-		return cmdWrapper.cmd.execute(sender, conversionResult.getResult());
+		CommandExecuteEvent event = new CommandExecuteEvent(sender, cmdWrapper.cmd, conversionResult.getResult());
+		Bukkit.getPluginManager().callEvent(event);
+		
+		return !event.isCancelled() && cmdWrapper.cmd.execute(sender, conversionResult.getResult());
 	}
 	
 	private CommandWrapper<?> getMatchingCommand(String arg) {
