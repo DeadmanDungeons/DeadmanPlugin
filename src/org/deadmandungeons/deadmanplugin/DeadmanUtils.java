@@ -1,13 +1,13 @@
 package org.deadmandungeons.deadmanplugin;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -264,7 +264,7 @@ public class DeadmanUtils {
 	}
 	
 	
-	public static List<String> toStringList(List<?> list) {
+	public static List<String> toStringList(Collection<?> list) {
 		List<String> strList = new ArrayList<String>();
 		for (Object value : list) {
 			strList.add(value.toString());
@@ -279,41 +279,6 @@ public class DeadmanUtils {
 				if (value.value() != null && type.isAssignableFrom(value.value().getClass())) {
 					return type.cast(value.value());
 				}
-			}
-		}
-		return null;
-	}
-	
-	public static ChatColor getChatColor(String color) {
-		if (color != null) {
-			if (color.length() == 1) {
-				return ChatColor.getByChar(color.charAt(0));
-			} else if (color.length() == 2 && color.startsWith("&")) {
-				return ChatColor.getByChar(color.charAt(1));
-			}
-			for (ChatColor chatColor : ChatColor.values()) {
-				if (chatColor.name().equalsIgnoreCase(color)) {
-					return chatColor;
-				}
-			}
-		}
-		return null;
-	}
-	
-	public static ItemStack getItemStack(String item) {
-		if (item != null) {
-			String[] parts = item.split(":");
-			Material type = Material.matchMaterial(parts[0]);
-			if (type != null) {
-				byte data = 0;
-				if (parts.length >= 2) {
-					data = Byte.parseByte(parts[1]);
-				}
-				int amount = 1;
-				if (parts.length == 3) {
-					amount = Integer.parseInt(parts[2]);
-				}
-				return new ItemStack(type, amount, (short) 0, data);
 			}
 		}
 		return null;

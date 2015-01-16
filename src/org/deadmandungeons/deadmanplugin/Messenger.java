@@ -266,13 +266,7 @@ public class Messenger {
 	 */
 	public ChatColor getPrimaryColor() {
 		if (primaryColor == null) {
-			String property = "primary-color";
-			String colorCode = getRawMessage(property);
-			primaryColor = DeadmanUtils.getChatColor(colorCode);
-			if (primaryColor == null) {
-				plugin.getLogger().warning(String.format(BAD_COLOR, property, ChatColor.GOLD));
-				primaryColor = ChatColor.GOLD;
-			}
+			primaryColor = getChatColor("primary-color", ChatColor.GOLD);
 		}
 		return primaryColor;
 	}
@@ -283,15 +277,9 @@ public class Messenger {
 	 */
 	public ChatColor getSecondaryColor() {
 		if (secondaryColor == null) {
-			String property = "secondary-color";
-			String colorCode = getRawMessage(property);
-			secondaryColor = DeadmanUtils.getChatColor(colorCode);
-			if (secondaryColor == null) {
-				plugin.getLogger().warning(String.format(BAD_COLOR, property, ChatColor.GRAY));
-				secondaryColor = ChatColor.GRAY;
-			}
+			secondaryColor = getChatColor("secondary-color", ChatColor.GRAY);
 		}
-		return secondaryColor == null ? ChatColor.GRAY : secondaryColor;
+		return secondaryColor;
 	}
 	
 	/**
@@ -300,13 +288,7 @@ public class Messenger {
 	 */
 	public ChatColor getTertiaryColor() {
 		if (tertiaryColor == null) {
-			String property = "tertiary-color";
-			String colorCode = getRawMessage(property);
-			tertiaryColor = DeadmanUtils.getChatColor(colorCode);
-			if (tertiaryColor == null) {
-				plugin.getLogger().warning(String.format(BAD_COLOR, property, ChatColor.DARK_GRAY));
-				tertiaryColor = ChatColor.DARK_GRAY;
-			}
+			tertiaryColor = getChatColor("tertiary-color", ChatColor.DARK_GRAY);
 		}
 		return tertiaryColor;
 	}
@@ -380,6 +362,16 @@ public class Messenger {
 			plugin.getLogger().log(Level.SEVERE, "Failed to retrieve message '" + path + "' from lang file!");
 		}
 		return rawMessage;
+	}
+	
+	private ChatColor getChatColor(String property, ChatColor defaultColor) {
+		String colorCode = getRawMessage(property);
+		ChatColor color = plugin.getConversion().toChatColor(colorCode);
+		if (color == null) {
+			plugin.getLogger().warning(String.format(BAD_COLOR, property, defaultColor));
+			color = defaultColor;
+		}
+		return color;
 	}
 	
 }

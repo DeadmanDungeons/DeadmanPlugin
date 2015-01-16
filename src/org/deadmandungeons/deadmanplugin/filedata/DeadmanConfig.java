@@ -8,12 +8,9 @@ import java.util.Map;
 import java.util.logging.Level;
 
 import org.apache.commons.lang.Validate;
-import org.apache.commons.lang.math.NumberUtils;
-import org.bukkit.ChatColor;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.inventory.ItemStack;
+import org.deadmandungeons.deadmanplugin.Conversion.Converter;
 import org.deadmandungeons.deadmanplugin.DeadmanPlugin;
-import org.deadmandungeons.deadmanplugin.DeadmanUtils;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -41,8 +38,6 @@ public class DeadmanConfig {
 	private static final String FAILED_TO_LOAD = "A '%s' value for the config value at path '%s' in the default configuration file "
 			+ "was either missing or invalid! The default configuration must contain valid values.";
 	
-	private Map<Class<?>, Converter<?>> converters = new HashMap<Class<?>, Converter<?>>();
-	
 	// TODO maybe make a simple composite pattern object to handle this 3 level tree structure
 	// so many wildcards! The conversions are type safe though. Each inner collection will never be empty once loaded
 	private Map<ConfigEnum<?, ?>, Class<?>> types = new HashMap<ConfigEnum<?, ?>, Class<?>>();
@@ -54,8 +49,6 @@ public class DeadmanConfig {
 	
 	public DeadmanConfig(DeadmanPlugin plugin) {
 		this.plugin = plugin;
-		
-		registerDefaultConverters();
 	}
 	
 	/**
@@ -70,8 +63,7 @@ public class DeadmanConfig {
 		Validate.notNull(type);
 		Validate.notNull(values);
 		
-		@SuppressWarnings("unchecked")
-		Converter<T> converter = (Converter<T>) converters.get(type);
+		Converter<T> converter = plugin.getConversion().getConverter(type);
 		if (converter != null) {
 			Map<ConfigEnum<?, ?>, T> tValues = new HashMap<ConfigEnum<?, ?>, T>();
 			Map<ConfigEnum<?, ?>, List<?>> tLists = new HashMap<ConfigEnum<?, ?>, List<?>>();
@@ -204,19 +196,6 @@ public class DeadmanConfig {
 		return ImmutableMap.<String, T> builder().put("0", getValue(configEnum)).build();
 	}
 	
-	/**
-	 * If a config value is of a type other than String, Integer, Boolean, ChatColor, or ItemStack,
-	 * a new Converter will need to be registered for config values of that type.
-	 * @param type - The type the converter converts to
-	 * @param converter - The converter instance to register for objects of the given type
-	 */
-	public <T> void registerConverter(Class<? super T> type, Converter<T> converter) {
-		Validate.notNull(type);
-		Validate.notNull(converter);
-		
-		converters.put(type, converter);
-	}
-	
 	
 	private <T> T getValue(Class<? super T> type, Converter<T> converter, String path) {
 		T value = null;
@@ -301,90 +280,6 @@ public class DeadmanConfig {
 		return mapBuilder.build();
 	}
 	
-	private void registerDefaultConverters() {
-		registerConverter(String.class, new Converter<String>() {
-			
-			@Override
-			public String convert(Object obj) {
-				return obj.toString();
-			}
-		});
-		registerConverter(Number.class, new Converter<Number>() {
-			
-			@Override
-			public Number convert(Object obj) {
-				if (obj instanceof Number) {
-					return (Number) obj;
-				} else if (NumberUtils.isNumber(obj.toString())) {
-					return NumberUtils.createNumber(obj.toString());
-				}
-				return null;
-			}
-		});
-		// TODO remove this converter once RealEstateMarket is updated, and switch to use Number instead
-		registerConverter(Integer.class, new Converter<Integer>() {
-			
-			@Override
-			public Integer convert(Object obj) {
-				if (obj instanceof Number) {
-					return ((Number) obj).intValue();
-				}
-				try {
-					return Integer.valueOf(obj.toString());
-				} catch (NumberFormatException e) {} catch (NullPointerException e) {}
-				return null;
-			}
-		});
-		registerConverter(Boolean.class, new Converter<Boolean>() {
-			
-			@Override
-			public Boolean convert(Object obj) {
-				if (obj instanceof Boolean) {
-					return (Boolean) obj;
-				}
-				if (obj != null) {
-					return Boolean.valueOf(obj.toString().toLowerCase());
-				}
-				return null;
-			}
-		});
-		registerConverter(ChatColor.class, new Converter<ChatColor>() {
-			
-			@Override
-			public ChatColor convert(Object obj) {
-				if (obj instanceof ChatColor) {
-					return (ChatColor) obj;
-				}
-				if (obj != null) {
-					return DeadmanUtils.getChatColor(obj.toString());
-				}
-				return null;
-			}
-		});
-		registerConverter(ItemStack.class, new Converter<ItemStack>() {
-			
-			@Override
-			public ItemStack convert(Object obj) {
-				if (obj instanceof ItemStack) {
-					return (ItemStack) obj;
-				}
-				if (obj != null) {
-					return DeadmanUtils.getItemStack(obj.toString());
-				}
-				return null;
-			}
-		});
-	}
-	
-	/**
-	 * A Converter is used to convert an Object obtained from the plugins Config to the appropriate type
-	 * @param <T> - The type to be converted to
-	 * @author Jon
-	 */
-	public static interface Converter<T> {
-		
-		T convert(Object obj);
-	}
 	
 	/**
 	 * @param <E> - The Enum of this ConfigEnum

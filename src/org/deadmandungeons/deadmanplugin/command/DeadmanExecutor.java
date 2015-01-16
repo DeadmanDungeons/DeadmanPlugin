@@ -4,6 +4,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.regex.Pattern;
 
 import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang.StringUtils;
@@ -25,6 +27,7 @@ import org.deadmandungeons.deadmanplugin.DeadmanUtils;
 import org.deadmandungeons.deadmanplugin.Messenger;
 import org.deadmandungeons.deadmanplugin.Result;
 import org.deadmandungeons.deadmanplugin.command.Arguments.SubCommand;
+import org.deadmandungeons.deadmanplugin.command.CommandInfo.CommandInfoImpl;
 
 //TODO use Messenger but check if message exists and fallback on hardcoded messages
 /**
@@ -40,7 +43,6 @@ public class DeadmanExecutor implements CommandExecutor {
 	private static final String NOT_CHATCOLOR = "'%s' is not a valid Minecraft Color";
 	private static final String NOT_DURATION = "The time duration match the format of #m:#h:#d and cannot be equal to zero minutes";
 	private static final String NOT_BOOLEAN = "'%s' is not a boolean. Argument must be either 'true' or 'false'";
-	private static final String IGNORE_CASE = "(?i:%s)";
 	
 	private final Map<Class<?>, CommandWrapper<?>> commands = new LinkedHashMap<Class<?>, CommandWrapper<?>>();
 	private final Map<Class<?>, ConfirmationCommand<?>> confirmationCommands = new HashMap<Class<?>, ConfirmationCommand<?>>();
@@ -107,7 +109,7 @@ public class DeadmanExecutor implements CommandExecutor {
 			
 			@Override
 			public Result<ChatColor> convertCommandArg(String argName, String arg) {
-				ChatColor color = DeadmanUtils.getChatColor(arg.toUpperCase());
+				ChatColor color = DeadmanExecutor.this.plugin.getConversion().toChatColor(arg);
 				return color != null ? new Result<ChatColor>(color) : new Result<ChatColor>(String.format(NOT_CHATCOLOR, arg));
 			}
 		});
@@ -228,8 +230,7 @@ public class DeadmanExecutor implements CommandExecutor {
 	
 	private CommandWrapper<?> getMatchingCommand(String arg) {
 		for (CommandWrapper<?> cmdWrapper : commands.values()) {
-			CommandInfo info = cmdWrapper.info;
-			if (info.name().equalsIgnoreCase(arg) || arg.matches(String.format(IGNORE_CASE, StringUtils.join(info.aliases(), '|')))) {
+			if (cmdWrapper.info.name().equalsIgnoreCase(arg) || cmdWrapper.aliasPattern.matcher(arg).matches()) {
 				return cmdWrapper;
 			}
 		}
@@ -265,37 +266,63 @@ public class DeadmanExecutor implements CommandExecutor {
 	 * This method will construct a new instance of the given Command class by calling<br>
 	 * {@link java.lang.Class#newInstance() Class#newInstance()}. Thus the Command class must have a no-arg constructor.
 	 * If there is not a public no-arg constructor, then register the Command using {@link #registerCommand(Command)}.
-	 * @param command - The class of the command that should be registered
+	 * @param commandClass - The class of the command that should be registered
 	 * @throws IllegalStateException if the class of the given command is not annotated with the {@link CommandInfo} annotation
-	 * with at least the name and pattern properties
 	 * @throws IllegalArgumentException if command is null
 	 */
 	public final <C extends Command> void registerCommand(Class<C> commandClass) {
 		Validate.notNull(commandClass, "commandClass cannot be null");
-		CommandInfo info = getCommandInfo(commandClass);
-		if (info != null) {
-			try {
-				commands.put(commandClass, new CommandWrapper<C>(info, commandClass.newInstance()));
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
+		
+		CommandInfo commandInfo = getCommandInfo(commandClass);
+		registerCommand(commandClass, commandInfo);
+	}
+	
+	/**
+	 * Register the given command.<br>
+	 * Use this register method when the CommandInfo cannot be static and is generated at runtime.
+	 * Use {@link CommandInfoImpl} to construct a CommandInfo object at runtime.
+	 * @param commandClass - The class of the command that should be registered
+	 * @param commandInfo - The {@link CommandInfo} for the command
+	 * @throws IllegalArgumentException if commandClass or commandInfo is null
+	 */
+	public final <C extends Command> void registerCommand(Class<C> commandClass, CommandInfo commandInfo) {
+		Validate.notNull(commandClass, "commandClass cannot be null");
+		
+		try {
+			registerCommand(commandClass.newInstance(), commandInfo);
+		} catch (Exception e) {
+			plugin.getLogger().log(Level.SEVERE, "An exception occured while registering command " + commandClass.getCanonicalName());
+			e.printStackTrace();
 		}
 	}
 	
 	/**
 	 * Register the given command.<br>
-	 * Use this register method over {@link #registerCommand(Class)} when the Command class does not have a public no-arg constructor.
+	 * Use this register method when the Command class does not have a public no-arg constructor.
 	 * @param command - An instance of the command that should be registered
 	 * @throws IllegalStateException if the class of the given command is not annotated with the {@link CommandInfo} annotation
-	 * with at least the name and pattern properties
 	 * @throws IllegalArgumentException if command is null
 	 */
 	public final <C extends Command> void registerCommand(C command) {
 		Validate.notNull(command, "command cannot be null");
-		CommandInfo info = getCommandInfo(command.getClass());
-		if (info != null) {
-			commands.put(command.getClass(), new CommandWrapper<C>(info, command));
-		}
+		
+		CommandInfo commandInfo = getCommandInfo(command.getClass());
+		registerCommand(command, commandInfo);
+	}
+	
+	/**
+	 * Register the given command.<br>
+	 * Use this register method when the CommandInfo cannot be static and is generated at runtime,
+	 * and when the Command class does not have a public no-arg constructor.
+	 * Use {@link CommandInfoImpl} to construct a CommandInfo object at runtime.
+	 * @param command - An instance of the command that should be registered
+	 * @param commandInfo - The {@link CommandInfo} for the command
+	 */
+	public final <C extends Command> void registerCommand(C command, CommandInfo commandInfo) {
+		Validate.notNull(command, "command cannot be null");
+		Validate.notNull(commandInfo, "commandInfo cannot be null");
+		
+		commands.put(command.getClass(), new CommandWrapper<C>(commandInfo, command));
 	}
 	
 	private <C extends Command> CommandInfo getCommandInfo(Class<C> commandClass) {
@@ -306,6 +333,7 @@ public class DeadmanExecutor implements CommandExecutor {
 		}
 		return info;
 	}
+	
 	
 	/**
 	 * @param command - The class of the desired Command
@@ -479,10 +507,12 @@ public class DeadmanExecutor implements CommandExecutor {
 		
 		private final CommandInfo info;
 		private final C cmd;
+		private final Pattern aliasPattern;
 		
 		private CommandWrapper(CommandInfo info, C cmd) {
 			this.info = info;
 			this.cmd = cmd;
+			aliasPattern = Pattern.compile(String.format("(?i:%s)", StringUtils.join(info.aliases(), '|')));
 		}
 		
 		public CommandInfo getInfo() {

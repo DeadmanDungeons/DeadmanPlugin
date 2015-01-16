@@ -7,7 +7,6 @@ import org.bukkit.command.CommandSender;
 import org.deadmandungeons.deadmanplugin.Result;
 import org.deadmandungeons.deadmanplugin.command.ArgumentInfo.ArgType;
 import org.deadmandungeons.deadmanplugin.command.DeadmanExecutor.CommandWrapper;
-import org.deadmandungeons.deadmanplugin.filedata.DeadmanConfig.Converter;
 
 /**
  * This class is used to pass a valid set of arguments to the {@link Command#execute(CommandSender, Arguments) execute()} method
@@ -94,7 +93,7 @@ public final class Arguments {
 	}
 	
 	/**
-	 * This class should be used to build a {@link SubCommand} object which will be used by the {@link Converter} builder class.
+	 * This class should be used to build a {@link SubCommand} object which will be used convert the arguments.
 	 * This builder class will match the provided array of arguments against the provided Command's SubCommandInfo. <br />
 	 * Required parameters before calling {@link #findMatch()}:<br />
 	 * <ul>
@@ -230,10 +229,9 @@ public final class Arguments {
 	}
 	
 	/**
-	 * This class is used as a container for a matched array of arguments against a Commands {@link SubCommandInfo} annotation. The
+	 * This class is used to convert the matched array of arguments against a Commands {@link SubCommandInfo} annotation. The
 	 * {@link Matcher#findMatch()} method of the Matcher builder will return an instance of this class
-	 * when the Matcher is built with a valid array of arguments for the given Command. The instance of this class is
-	 * then used as a parameter for the {@link Converter} builder.
+	 * when the Matcher is built with a valid array of arguments for the given Command.
 	 * @author Jon
 	 */
 	public static final class SubCommand {

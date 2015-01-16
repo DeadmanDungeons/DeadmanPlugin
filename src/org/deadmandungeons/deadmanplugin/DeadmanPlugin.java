@@ -144,6 +144,10 @@ public abstract class DeadmanPlugin extends JavaPlugin {
 		return permissions;
 	}
 	
+	public final Conversion getConversion() {
+		return Conversion.get(getClass());
+	}
+	
 	
 	/**
 	 * @return an ImmutableMap of all the currently instantiated DeadmanPlugins
