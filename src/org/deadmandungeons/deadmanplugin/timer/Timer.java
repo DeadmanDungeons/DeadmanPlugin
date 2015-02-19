@@ -28,11 +28,27 @@ public abstract class Timer {
 	}
 	
 	/**
-	 * This checks if the startTime has been set, and if {@link #getTimeLeft()} returns a number less than or equal to 0
-	 * @return true if this timer has been started and is now ended, and false otherwise
+	 * This checks if the startTime has been set, and if {@link #getTimeLeft()} returns a number greater than 0
+	 * @return true if this timer has been started and is still alive, and false otherwise
+	 */
+	public final boolean isAlive() {
+		return getStartTime() > -1 && getTimeLeft() > 0;
+	}
+	
+	/**
+	 * This checks if the startTime has not been set (or startTime == -1), and if {@link #getTimeLeft()} is 0 or less
+	 * @return true if this timer has not yet been started
+	 */
+	public final boolean isPending() {
+		return getStartTime() == -1 && getTimeLeft() <= 0;
+	}
+	
+	/**
+	 * This checks if {@link #isAlive()} and {@link #isPending()} both return false
+	 * @return true if this timer has started and is now finished
 	 */
 	public final boolean isEnded() {
-		return getStartTime() != -1 && getTimeLeft() <= 0;
+		return !isAlive() && !isPending();
 	}
 	
 	/**
@@ -54,6 +70,18 @@ public abstract class Timer {
 	@Override
 	public String toString() {
 		return DeadmanUtils.getDurationString(getTimeLeft());
+	}
+	
+	public static boolean isAlive(Timer timer) {
+		return timer != null && timer.isAlive();
+	}
+	
+	public static boolean isPending(Timer timer) {
+		return timer != null && timer.isPending();
+	}
+	
+	public static boolean isEnded(Timer timer) {
+		return timer == null || timer.isEnded();
 	}
 	
 }

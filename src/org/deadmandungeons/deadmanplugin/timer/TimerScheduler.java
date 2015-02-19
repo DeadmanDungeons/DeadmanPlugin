@@ -102,24 +102,13 @@ public class TimerScheduler implements Runnable {
 	
 	/**
 	 * Set Timer for this scheduler. Any currently scheduled Timers will be canceled.
-	 * If the given timer has ended ({@link #isTimerEnded()}), the timer will be set as null
+	 * If the given timer has ended ({@link Timer#isEnded()}), the timer will be set as null
 	 * @param timer - The Timer object to use for this scheduler
 	 */
 	public final void setTimer(Timer timer) {
 		// cancel any currently qeued tasks now that we are using a new Timer
 		stopTimer();
-		this.timer = (isTimerEnded(timer) ? null : timer);
-	}
-	
-	/**
-	 * @return true if the timer is null or its time has expired, and false otherwise
-	 */
-	public final boolean isTimerEnded() {
-		return isTimerEnded(this.timer);
-	}
-	
-	private boolean isTimerEnded(Timer timer) {
-		return timer == null || (timer != null && timer.isEnded());
+		this.timer = (timer != null && !timer.isEnded() ? timer : null);
 	}
 	
 	/**

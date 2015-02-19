@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 
 import org.apache.commons.lang.Validate;
@@ -24,16 +25,16 @@ import org.deadmandungeons.deadmanplugin.filedata.DataEntry;
 import com.google.common.collect.ImmutableList;
 
 /**
- * This abstract class is to be extended by an object that represents a certain Sign type.
- * The Sign being represented should also represent a certain {@link SignObject} which is of type T.
+ * This abstract class is to be implemented to define a certain Sign type which represents objects of type T.
+ * @param <T> - The type of the object that the DeadmanSign represents
  * @author Jon
  */
-public abstract class DeadmanSign<T extends SignObject> {
+public abstract class DeadmanSign<T> {
 	
 	private static final String INVALID_SIGN_ENTRY = "The sign entry '%s' in the %2$s data list at path '%s.%2$s' is invalid! This entry will be removed from file.";
 	
 	// This is the most ridiculous Generic use ever
-	private static final Map<Class<? extends DeadmanSign<?>>, DeadmanSignHandler<? extends SignObject, ? extends DeadmanSign<?>>> handlers = new HashMap<Class<? extends DeadmanSign<?>>, DeadmanSignHandler<? extends SignObject, ? extends DeadmanSign<?>>>();
+	private static final Map<Class<? extends DeadmanSign<?>>, DeadmanSignHandler<?, ? extends DeadmanSign<?>>> handlers = new HashMap<Class<? extends DeadmanSign<?>>, DeadmanSignHandler<?, ? extends DeadmanSign<?>>>();
 	
 	private final Sign sign;
 	private final DataEntry dataEntry;
@@ -70,7 +71,7 @@ public abstract class DeadmanSign<T extends SignObject> {
 	}
 	
 	/**
-	 * @return The {@link SignObject} of type T that this sign represents
+	 * @return The Object of type T that this sign represents
 	 */
 	public T getSignObject() {
 		return signObject;
@@ -119,7 +120,7 @@ public abstract class DeadmanSign<T extends SignObject> {
 	 * @param signClass - The class of the DeadmanSign the DeadmanSignHandler is for
 	 * @param handler - The instance of the DeadmanSignHandler to set as the handler for all stored instances of the given DeadmanSign type
 	 */
-	public static <V extends SignObject, T extends DeadmanSign<V>> void setHandler(Class<T> signClass, DeadmanSignHandler<V, T> handler) {
+	public static <V, T extends DeadmanSign<V>> void setHandler(Class<T> signClass, DeadmanSignHandler<V, T> handler) {
 		Validate.notNull(signClass, "signClass cannot be null");
 		Validate.notNull(handler, "handler cannot be null");
 		
@@ -135,7 +136,7 @@ public abstract class DeadmanSign<T extends SignObject> {
 	 * @param signClass - The class of the {@link DeadmanSign} the desired {@link DeadmanSignHandler} is for
 	 * @return the DeadmanSignHandler instance that was set for the given DeadmanSign class or if null no DeadmanSignHandler was set
 	 */
-	public static <V extends SignObject, T extends DeadmanSign<V>> DeadmanSignHandler<V, T> getHandler(Class<T> signClass) {
+	public static <V, T extends DeadmanSign<V>> DeadmanSignHandler<V, T> getHandler(Class<T> signClass) {
 		Validate.notNull(signClass, "signClass cannot be null");
 		@SuppressWarnings("unchecked")
 		DeadmanSignHandler<V, T> handler = (DeadmanSignHandler<V, T>) handlers.get(signClass);
@@ -145,17 +146,17 @@ public abstract class DeadmanSign<T extends SignObject> {
 	
 	/**
 	 * This Listener class is provided to improve modularity with events relating to DeadmanSigns.
-	 * Extend this class for each {@link DeadmanSign} of type T that represents a {@link SignObject} of type V.<br />
+	 * Extend this class for each {@link DeadmanSign} of type T.<br />
 	 * Construct this object for each DeadmanSign type that the plugin will be listening to.
 	 * Call {@link DeadmanSign#setHandler(Class, DeadmanSignHandler)} to register the Sign events and
 	 * bind a handler to the DeadmanSign of type T.<br>
 	 * All DeadmanSigns of type T that are created should be stored in this class's deadmanSigns HashMap
 	 * using {@link #getDeadmanSigns()}
-	 * @param <V> - The {@link SignObject} that the signs of type T represent
+	 * @param <V> - The type of the object that the signs of type T represent
 	 * @param <T> - The {@link DeadmanSign} involved in the sign events
 	 * @author Jon
 	 */
-	public static abstract class DeadmanSignHandler<V extends SignObject, T extends DeadmanSign<V>> implements Listener {
+	public static abstract class DeadmanSignHandler<V, T extends DeadmanSign<V>> implements Listener {
 		
 		private Map<Location, T> deadmanSigns = new HashMap<Location, T>();
 		
@@ -226,10 +227,21 @@ public abstract class DeadmanSign<T extends SignObject> {
 			}
 		}
 		
+		// TODO maybe return UnmodifiableMap and provide add/remove methods
 		/**
 		 * @return The reference to all of the DeadmanSigns of type T for this plugin
 		 */
 		public final Map<Location, T> getDeadmanSigns() {
+			return deadmanSigns;
+		}
+		
+		public final Map<Location, T> getDeadmanSigns(V signObject) {
+			Map<Location, T> deadmanSigns = new HashMap<Location, T>();
+			for (T deadmanSign : this.deadmanSigns.values()) {
+				if (deadmanSign.getSignObject().equals(signObject)) {
+					deadmanSigns.put(deadmanSign.sign.getLocation(), deadmanSign);
+				}
+			}
 			return deadmanSigns;
 		}
 		
@@ -245,8 +257,8 @@ public abstract class DeadmanSign<T extends SignObject> {
 		
 		/**
 		 * clear the text on the {@link Sign} object of all the stored DeadmanSigns of type T
-		 * that represent the given SignObject, and remove them from the datastore
-		 * @param signObject - The {@link SignObject} that the cleared signs should represent
+		 * that represent the given sign Object, and remove them from the datastore
+		 * @param signObject - The sign Object of type V that the cleared signs should represent
 		 */
 		public final void clearSigns(V signObject) {
 			Iterator<T> iter = deadmanSigns.values().iterator();
@@ -260,7 +272,7 @@ public abstract class DeadmanSign<T extends SignObject> {
 		}
 		
 		/**
-		 * @param signObject - The {@link SignObject} that the updated signs should represent
+		 * @param signObject - The sign Object of type V that the updated signs should represent
 		 */
 		public final void updateSigns(V signObject) {
 			for (T deadmanSign : deadmanSigns.values()) {
@@ -270,11 +282,24 @@ public abstract class DeadmanSign<T extends SignObject> {
 			}
 		}
 		
-		public abstract void onSignCreate(SignChangeEvent event, Sign sign);
+		public final void loadSigns(V signObject) {
+			Set<T> loadedSigns = load(signObject);
+			// clear signs after load in case implementor manually adds the DeadmanSigns to the datastore
+			clearSigns(signObject);
+			if (loadedSigns != null && !loadedSigns.isEmpty()) {
+				for (T deadmanSign : loadedSigns) {
+					deadmanSigns.put(deadmanSign.sign.getLocation(), deadmanSign);
+				}
+			}
+		}
 		
-		public abstract void onSignBreak(BlockBreakEvent event, T deadmanSign);
+		protected abstract void onSignCreate(SignChangeEvent event, Sign sign);
 		
-		public abstract void onSignClick(PlayerInteractEvent event, T deadmanSign);
+		protected abstract void onSignBreak(BlockBreakEvent event, T deadmanSign);
+		
+		protected abstract void onSignClick(PlayerInteractEvent event, T deadmanSign);
+		
+		protected abstract Set<T> load(V signObject);
 		
 	}
 	

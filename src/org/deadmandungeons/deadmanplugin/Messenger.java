@@ -81,6 +81,10 @@ public class Messenger {
 	}
 	
 	/**
+	 * The provided variables will be represented in the returned message by the result of
+	 * their {@link #toString()}. <br>
+	 * If a provided variable is an instances of {@link Identifiable}, the variable will
+	 * be set as the result of {@link Identifiable#getManagedId()}
 	 * @param path - String path name to the desired message in the plugin's language file
 	 * @param colorCode - boolean flag state weather message should returned with color injected or not
 	 * @param vars - The variables to be injected in the message, given in the order that they occur
@@ -103,7 +107,11 @@ public class Messenger {
 			if (vars.length > 0) {
 				Matcher matcher = VARIABLE_PATTERN.matcher(message);
 				for (int i = 0; i < vars.length && matcher.find(); i++) {
-					String value = (autoColor ? getPrimaryColor() + vars[i].toString() + getSecondaryColor() : vars[i].toString());
+					Object var = vars[i];
+					if (var instanceof Identifiable) {
+						var = ((Identifiable<?>) var).getManagedId();
+					}
+					String value = (autoColor ? getPrimaryColor() + var.toString() + getSecondaryColor() : var.toString());
 					message = message.replace(matcher.group(), value);
 				}
 			}
@@ -372,6 +380,26 @@ public class Messenger {
 			color = defaultColor;
 		}
 		return color;
+	}
+	
+	
+	/**
+	 * An identifiable object is one that can identified by a user, and indexed/managed by the
+	 * implementing plugin with the identifier returned by {@link #getManagedId()}.
+	 * It is up to the implementing plugin to handle how the identifiable object is managed,
+	 * so there are no implementation requirements for this interface.
+	 * @param <T> - The type of the managed ID for the Identifiable object
+	 * @author Jon
+	 */
+	public static interface Identifiable<T> {
+		
+		/**
+		 * When an Identifiable object is passed to a {@link Messenger} as a message variable, this
+		 * returned value will be represented in the message by the result of its {@link #toString()}
+		 * @return the ID that can be identified by a user, and indexed/managed by the implementing plugin.
+		 */
+		T getManagedId();
+		
 	}
 	
 }
