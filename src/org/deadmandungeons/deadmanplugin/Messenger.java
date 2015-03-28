@@ -5,7 +5,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -361,13 +360,13 @@ public class Messenger {
 			if (rawMessage == null) {
 				rawMessage = langFile.getConfig().getDefaults().getString(path);
 				if (rawMessage != null) {
-					plugin.getLogger().log(Level.WARNING, "Missing message at path '" + path + "' from lang file! default message will be used");
+					plugin.getLogger().warning("Missing message at path '" + path + "' from lang file! default message will be used");
 				}
 			}
 			cachedMessages.put(path, rawMessage);
 		}
 		if (rawMessage == null) {
-			plugin.getLogger().log(Level.SEVERE, "Failed to retrieve message '" + path + "' from lang file!");
+			plugin.getLogger().severe("Failed to retrieve message '" + path + "' from lang file!");
 		}
 		return rawMessage;
 	}

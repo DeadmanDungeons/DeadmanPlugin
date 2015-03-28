@@ -131,7 +131,7 @@ public class PluginFile {
 			File createdFile = new File(plugin.getDataFolder().getPath() + File.separator + defaultFilePath);
 			// move the saved resource file to the appropriate directory
 			if (!createdFile.renameTo(configFile)) {
-				plugin.getLogger().log(Level.SEVERE, defaultFilePath + " failed to move!");
+				plugin.getLogger().severe(defaultFilePath + " failed to move!");
 			}
 		}
 	}

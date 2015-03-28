@@ -5,7 +5,6 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
 
 import org.apache.commons.lang.Validate;
 import org.bukkit.configuration.ConfigurationSection;
@@ -202,12 +201,12 @@ public class DeadmanConfig {
 		Object val = plugin.getConfig().get(path);
 		if (val != null) {
 			if (!plugin.getConfig().isSet(path)) {
-				plugin.getLogger().log(Level.SEVERE, String.format(MISSING_VALUE, type.getName(), path, val));
+				plugin.getLogger().severe(String.format(MISSING_VALUE, type.getName(), path, val));
 			}
 			value = converter.convert(val);
 			if (value == null) {
 				value = converter.convert(plugin.getConfig().getDefaults().get(path));
-				plugin.getLogger().log(Level.SEVERE, String.format(INVALID_VALUE, type.getName(), path, val));
+				plugin.getLogger().severe(String.format(INVALID_VALUE, type.getName(), path, val));
 			}
 		}
 		return value;
@@ -218,12 +217,12 @@ public class DeadmanConfig {
 		List<?> vals = plugin.getConfig().getList(path);
 		if (vals != null) {
 			if (!plugin.getConfig().isSet(path)) {
-				plugin.getLogger().log(Level.SEVERE, String.format(MISSING_VALUE, type.getName() + " List", path, Arrays.toString(vals.toArray())));
+				plugin.getLogger().severe(String.format(MISSING_VALUE, type.getName() + " List", path, Arrays.toString(vals.toArray())));
 			}
 			list = convertList(converter, vals);
 			if (list == null) {
 				list = convertList(converter, plugin.getConfig().getDefaults().getList(path));
-				plugin.getLogger().log(Level.SEVERE, String.format(INVALID_VALUE, type.getName(), path, Arrays.toString(vals.toArray())));
+				plugin.getLogger().severe(String.format(INVALID_VALUE, type.getName(), path, Arrays.toString(vals.toArray())));
 			}
 		}
 		return list;
@@ -250,14 +249,14 @@ public class DeadmanConfig {
 		if (section != null) {
 			Map<String, ?> vals = section.getValues(false);
 			if (!plugin.getConfig().isSet(path)) {
-				plugin.getLogger().log(Level.SEVERE, String.format(MISSING_VALUE, type.getName() + " List", path, vals.toString()));
+				plugin.getLogger().severe(String.format(MISSING_VALUE, type.getName() + " List", path, vals.toString()));
 			}
 			map = convertMap(converter, vals);
 			if (map == null) {
 				ConfigurationSection defaultSection = plugin.getConfig().getDefaults().getConfigurationSection(path);
 				if (defaultSection != null) {
 					map = convertMap(converter, defaultSection.getValues(false));
-					plugin.getLogger().log(Level.SEVERE, String.format(INVALID_VALUE, type.getName(), path, vals.toString()));
+					plugin.getLogger().severe(String.format(INVALID_VALUE, type.getName(), path, vals.toString()));
 				}
 			}
 		}

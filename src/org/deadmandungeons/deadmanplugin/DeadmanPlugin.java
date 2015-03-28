@@ -3,14 +3,12 @@ package org.deadmandungeons.deadmanplugin;
 import java.io.File;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.logging.Level;
 
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.permission.Permission;
 
 import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
-import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -103,7 +101,7 @@ public abstract class DeadmanPlugin extends JavaPlugin {
 	public final boolean setupEconomy() {
 		if (economy == null) {
 			if (!getServer().getPluginManager().isPluginEnabled("Vault")) {
-				getLogger().log(Level.SEVERE, "Vault is not enabled on this server and is a required dependendy!");
+				getLogger().severe("Vault is not enabled on this server and is a required dependendy!");
 				return false;
 			}
 			RegisteredServiceProvider<Economy> economyProvider = getServer().getServicesManager().getRegistration(Economy.class);
@@ -117,7 +115,7 @@ public abstract class DeadmanPlugin extends JavaPlugin {
 	public final boolean setupPermissions() {
 		if (permissions == null) {
 			if (!getServer().getPluginManager().isPluginEnabled("Vault")) {
-				getLogger().log(Level.SEVERE, "Vault is not enabled on this server and is a required dependendy!");
+				getLogger().severe("Vault is not enabled on this server and is a required dependendy!");
 				return false;
 			}
 			RegisteredServiceProvider<Permission> permissionProvider = getServer().getServicesManager().getRegistration(Permission.class);
@@ -126,14 +124,6 @@ public abstract class DeadmanPlugin extends JavaPlugin {
 			}
 		}
 		return (permissions != null);
-	}
-	
-	public final <T extends Plugin> T getPluginDependency(String pluginName, Class<T> pluginType) {
-		Plugin plugin = getServer().getPluginManager().getPlugin(pluginName);
-		if (plugin != null && pluginType.isInstance(plugin)) {
-			return pluginType.cast(plugin);
-		}
-		return null;
 	}
 	
 	public final Economy getEconomy() {

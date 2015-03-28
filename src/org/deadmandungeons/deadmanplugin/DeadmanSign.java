@@ -5,7 +5,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Level;
 
 import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
@@ -111,7 +110,7 @@ public abstract class DeadmanSign<T> {
 	 * @param configPath - The path to the given property
 	 */
 	public static void alertInvalidEntry(DeadmanPlugin plugin, DataEntry entry, String property, String configPath) {
-		plugin.getLogger().log(Level.SEVERE, String.format(INVALID_SIGN_ENTRY, entry.toString(), property, configPath));
+		plugin.getLogger().severe(String.format(INVALID_SIGN_ENTRY, entry.toString(), property, configPath));
 	}
 	
 	/**
@@ -239,7 +238,7 @@ public abstract class DeadmanSign<T> {
 			Map<Location, T> deadmanSigns = new HashMap<Location, T>();
 			for (T deadmanSign : this.deadmanSigns.values()) {
 				if (deadmanSign.getSignObject().equals(signObject)) {
-					deadmanSigns.put(deadmanSign.sign.getLocation(), deadmanSign);
+					deadmanSigns.put(deadmanSign.getSign().getLocation(), deadmanSign);
 				}
 			}
 			return deadmanSigns;
@@ -288,7 +287,7 @@ public abstract class DeadmanSign<T> {
 			clearSigns(signObject);
 			if (loadedSigns != null && !loadedSigns.isEmpty()) {
 				for (T deadmanSign : loadedSigns) {
-					deadmanSigns.put(deadmanSign.sign.getLocation(), deadmanSign);
+					deadmanSigns.put(deadmanSign.getSign().getLocation(), deadmanSign);
 				}
 			}
 		}

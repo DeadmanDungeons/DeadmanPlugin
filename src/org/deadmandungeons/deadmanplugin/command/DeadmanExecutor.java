@@ -4,7 +4,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.logging.Level;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang.BooleanUtils;
@@ -291,7 +290,7 @@ public class DeadmanExecutor implements CommandExecutor {
 		try {
 			registerCommand(commandClass.newInstance(), commandInfo);
 		} catch (Exception e) {
-			plugin.getLogger().log(Level.SEVERE, "An exception occured while registering command " + commandClass.getCanonicalName());
+			plugin.getLogger().severe("An exception occured while registering command " + commandClass.getCanonicalName());
 			e.printStackTrace();
 		}
 	}
