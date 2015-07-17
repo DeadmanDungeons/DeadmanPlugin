@@ -1,6 +1,7 @@
 package org.deadmandungeons.deadmanplugin.command;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -28,7 +29,7 @@ import org.deadmandungeons.deadmanplugin.Result;
 import org.deadmandungeons.deadmanplugin.command.Arguments.SubCommand;
 import org.deadmandungeons.deadmanplugin.command.CommandInfo.CommandInfoImpl;
 
-//TODO use Messenger but check if message exists and fallback on hardcoded messages
+// TODO use Messenger but check if message exists and fallback on hardcoded messages
 /**
  * The base CommandExecutor for Deadman plugins.<br />
  * Any {@link Command}, {@link PseudoCommand}, {@link ArgumentConverter}, and HelpInfo need to be registered using the
@@ -358,13 +359,12 @@ public class DeadmanExecutor implements CommandExecutor {
 	}
 	
 	/**
-	 * Any modification to the returned Map, will not have any effect on the registered commands.
 	 * Use the {@link #register(Class command)} method to properly register a command.
-	 * @return A new HashMap containing all of the registered commands, with the
+	 * @return An UnmodifiableMap containing all of the registered commands, with the
 	 * commands class by key, and the {@link CommandWrapper} by value.
 	 */
 	public final Map<Class<?>, CommandWrapper<?>> getCommands() {
-		return new HashMap<Class<?>, CommandWrapper<?>>(commands);
+		return Collections.unmodifiableMap(commands);
 	}
 	
 	
@@ -385,12 +385,11 @@ public class DeadmanExecutor implements CommandExecutor {
 	}
 	
 	/**
-	 * Any modification to the returned Map, will not have any effect on the registered PseudoCommands.
 	 * Use the {@link #registerPseudoCommad(String cmdName, Command command)} method to properly register a PseudoCommand.
-	 * @return A new HashMap containing all of the commands pattern by key, and the registered commands by value.
+	 * @return An UnmodifiableMap containing all of the commands pattern by key, and the registered commands by value.
 	 */
 	public final Map<String, PseudoCommand> getPseudoCommands() {
-		return new HashMap<String, PseudoCommand>(pseudoCommands);
+		return Collections.unmodifiableMap(pseudoCommands);
 	}
 	
 	
@@ -412,12 +411,8 @@ public class DeadmanExecutor implements CommandExecutor {
 	public final void registerConfirmationCommand(ConfirmationCommand<?> command, String acceptCmd, String declineCmd) {
 		Validate.notNull(command, "command cannot be null");
 		
-		if (acceptCmd == null) {
-			acceptCmd = "accept";
-		}
-		if (declineCmd == null) {
-			declineCmd = "cancel";
-		}
+		acceptCmd = (acceptCmd == null ? "accept" : acceptCmd.toLowerCase());
+		declineCmd = (declineCmd == null ? "cancel" : declineCmd.toLowerCase());
 		registerPseudoCommand(acceptCmd.toLowerCase(), ConfirmationCommand.getAcceptCommand());
 		registerPseudoCommand(declineCmd.toLowerCase(), ConfirmationCommand.getDeclineCommand());
 		confirmationCommands.put(command.getClass(), command);
@@ -437,6 +432,12 @@ public class DeadmanExecutor implements CommandExecutor {
 		return cmd;
 	}
 	
+	/**
+	 * @return an unmodifiable Map of all the registered {@link ConfirmationCommand}s
+	 */
+	public final Map<Class<?>, ConfirmationCommand<?>> getConfirmationCommands() {
+		return Collections.unmodifiableMap(confirmationCommands);
+	}
 	
 	/**
 	 * @param converter - The ArgumentConverter to register

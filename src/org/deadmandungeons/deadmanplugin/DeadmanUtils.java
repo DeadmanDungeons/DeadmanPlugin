@@ -25,7 +25,7 @@ import org.deadmandungeons.deadmanplugin.filedata.DataEntry;
 import org.deadmandungeons.deadmanplugin.filedata.DataEntry.Key;
 
 /**
- * Do not instantiate this class. Public constructor must be provided to be extended from each plugin
+ * A utility class containing various useful methods which are commonly used throughout Deadman plugins
  * @author Jon
  */
 public class DeadmanUtils {
@@ -35,7 +35,8 @@ public class DeadmanUtils {
 	private static final Pattern LOCATION_PATTERN = Pattern.compile("X(-?\\d+)Y(-?\\d+)Z(-?\\d+)W(.+)");
 	private static final Pattern UUID_PATTERN = Pattern.compile("^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$");
 	
-	// no private constructor to allow this util class to be extended
+	// protected constructor to allow this util class to be extended
+	protected DeadmanUtils() {}
 	
 	/**
 	 * This will return a rounded String representation of the given duration in milliseconds

@@ -29,7 +29,7 @@ import com.google.common.collect.ImmutableMap;
  * @see {@link #toString()} for information on the format of a DataEntry
  * @author Jon
  */
-public class DataEntry {
+public class DataEntry implements Cloneable {
 	
 	// Matches a java enum constant for the key group, and any character that is not a comma as the value group, separated by a colon
 	private static final Pattern VALUE_PATTERN = Pattern.compile("([a-zA-Z][a-zA-Z0-9$_]*?):([^,]+)");
@@ -474,23 +474,31 @@ public class DataEntry {
 	 */
 	@Override
 	public final String toString() {
-		StringBuilder entry = new StringBuilder();
-		for (String key : values.keySet()) {
-			format(entry, key, values.get(key));
+		StringBuilder entryBuiler = new StringBuilder();
+		for (Map.Entry<String, Object> valueEntry : values.entrySet()) {
+			format(entryBuiler, valueEntry.getKey().toUpperCase(), valueEntry.getValue());
 		}
-		return entry.toString();
+		return entryBuiler.toString();
 	}
+	
+	@Override
+	public DataEntry clone() {
+		// clone by parsing this DataEntry serialized as String rather than cloning values map
+		// because there is a chance that one of the set values is not immutable
+		return new DataEntry(toString());
+	}
+	
 	
 	/**
 	 * @param values - A map containing the pairs of Enum keys to values to be formatted
 	 * @return A formatted String with the given key/value pairs as specified by {@link #toString()}
 	 */
 	public static String format(Map<Enum<?>, Object> values) {
-		StringBuilder entry = new StringBuilder();
-		for (Enum<?> key : values.keySet()) {
-			format(entry, key.name().toUpperCase(), values.get(key));
+		StringBuilder entryBuiler = new StringBuilder();
+		for (Map.Entry<Enum<?>, Object> valueEntry : values.entrySet()) {
+			format(entryBuiler, valueEntry.getKey().name().toUpperCase(), valueEntry.getValue());
 		}
-		return entry.toString();
+		return entryBuiler.toString();
 	}
 	
 	private static void format(StringBuilder entry, String key, Object value) {

@@ -185,7 +185,7 @@ public abstract class DeadmanSign<T> {
 		}
 		
 		@EventHandler(ignoreCancelled = true)
-		public void onSignCreate(SignChangeEvent event) {
+		public final void onSignCreate(SignChangeEvent event) {
 			Sign sign = DeadmanUtils.getSignState(event.getBlock());
 			if (sign != null && signTags.contains(event.getLine(0))) {
 				onSignCreate(event, sign);
@@ -193,7 +193,7 @@ public abstract class DeadmanSign<T> {
 		}
 		
 		@EventHandler(ignoreCancelled = true)
-		public void onSignBreak(BlockBreakEvent event) {
+		public final void onSignBreak(BlockBreakEvent event) {
 			T deadmanSign = deadmanSigns.get(event.getBlock().getLocation());
 			if (deadmanSign != null) {
 				onSignBreak(event, deadmanSign);
@@ -201,7 +201,7 @@ public abstract class DeadmanSign<T> {
 		}
 		
 		@EventHandler(ignoreCancelled = true)
-		public void onPlayerInteract(PlayerInteractEvent event) {
+		public final void onPlayerInteract(PlayerInteractEvent event) {
 			if (event.getClickedBlock() != null) {
 				T deadmanSign = deadmanSigns.get(event.getClickedBlock().getLocation());
 				if (deadmanSign != null) {
