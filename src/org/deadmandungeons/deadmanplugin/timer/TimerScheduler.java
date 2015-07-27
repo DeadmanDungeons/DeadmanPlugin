@@ -23,9 +23,20 @@ public class TimerScheduler implements Runnable {
 	private long repeatTicks;
 	private BukkitTask task;
 	
-	private DeadmanPlugin plugin;
-	private TimerExecutor timerExecutor;
+	private final DeadmanPlugin plugin;
+	private final TimerExecutor timerExecutor;
 	private Timer timer;
+	
+	
+	/**
+	 * The {@link Timer} will not be set and will need to be set ({@link #setTimer(Timer)}) before calling {@link #startTimer()}
+	 * @param plugin - The DeadmanPlugin that this TimerScheduler is for
+	 * @param timerExecutor - The {@link TimerExecutor} to handle the Timer events
+	 * @throws IllegalArgumentException if plugin or timerExecutor is null
+	 */
+	public TimerScheduler(DeadmanPlugin plugin, TimerExecutor timerExecutor) {
+		this(plugin, timerExecutor, null);
+	}
 	
 	/**
 	 * @param plugin - The DeadmanPlugin that this TimerScheduler is for
@@ -101,14 +112,13 @@ public class TimerScheduler implements Runnable {
 	}
 	
 	/**
-	 * Set Timer for this scheduler. Any currently scheduled Timers will be canceled.
-	 * If the given timer has ended ({@link Timer#isEnded()}), the timer will be set as null
-	 * @param timer - The Timer object to use for this scheduler
+	 * Set the Timer for this scheduler. If there is a currently scheduled timer task, it will be canceled.
+	 * @param timer - The Timer object to use for this scheduler. Can be null.
 	 */
 	public final void setTimer(Timer timer) {
 		// cancel any currently qeued tasks now that we are using a new Timer
 		stopTimer();
-		this.timer = (timer != null && !timer.isEnded() ? timer : null);
+		this.timer = timer;
 	}
 	
 	/**
