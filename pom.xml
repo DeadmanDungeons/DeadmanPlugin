@@ -2,19 +2,21 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.deadmandungeons</groupId>
 	<artifactId>deadman-plugin</artifactId>
-	<version>1.2.1</version>
+	<version>1.7.4</version>
 	<name>DeadmanPlugin</name>
 	
 	<build>
+		<sourceDirectory>src</sourceDirectory>
+		
 		<resources>
 			<resource>
-				<directory></directory>
-				<filtering>true</filtering>
+				<directory>${basedir}</directory>
 				<includes>
 					<include>*.yml</include>
 				</includes>
 			</resource>
 		</resources>
+		
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -30,6 +32,10 @@
 
 	<repositories>
 		<repository>
+			<id>spigot-repo</id>
+			<url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
+		</repository>
+		<repository>
 			<id>sk89q-repo</id>
 			<url>http://maven.sk89q.com/repo/</url>
 		</repository>
@@ -40,36 +46,28 @@
 	</repositories>
 
 	<dependencies>
-		<!-- 
+	
 		<dependency>
-			<groupId>com.sk89q.spigot</groupId>
+			<groupId>org.bukkit</groupId>
 			<artifactId>bukkit</artifactId>
-			<version>1.8-R0.1-SNAPSHOT</version>
-			<scope>compile</scope>
-			<type>jar</type>
+			<version>1.8.8-R0.1-SNAPSHOT</version>
+			<scope>provided</scope>
 		</dependency>
-		<dependency>
-			<groupId>org.deadmandungeons.deadmanplugin</groupId>
-			<artifactId>DeadmanPlugin</artifactId>
-			<version>1.0</version>
-		</dependency>
-		<dependency>
-			<groupId>com.sk89q</groupId>
-			<artifactId>worldedit</artifactId>
-			<version>6.0.0-SNAPSHOT</version>
-		</dependency>
+		
 		<dependency>
 			<groupId>com.sk89q</groupId>
 			<artifactId>worldguard</artifactId>
-			<version>6.0.0-beta-01</version>
+			<version>6.1</version>
+			<scope>provided</scope>
 		</dependency>
+		
 		<dependency>
 			<groupId>net.milkbowl.vault</groupId>
 			<artifactId>Vault</artifactId>
 			<version>1.5.3</version>
 			<scope>provided</scope>
 		</dependency>
-		 -->
+		
 	</dependencies>
 
 </project>

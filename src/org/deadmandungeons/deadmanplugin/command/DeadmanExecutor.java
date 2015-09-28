@@ -41,8 +41,8 @@ public class DeadmanExecutor implements CommandExecutor {
 	
 	private static final String NOT_INT = "'%s' is not an integer";
 	private static final String NOT_CHATCOLOR = "'%s' is not a valid Minecraft Color";
-	private static final String NOT_DURATION = "The time duration match the format of #m:#h:#d and cannot be equal to zero minutes";
-	private static final String NOT_BOOLEAN = "'%s' is not a boolean. Argument must be either 'true' or 'false'";
+	private static final String NOT_DURATION = "%s must match the format of #d:#h:#m and cannot be equal to zero";
+	private static final String NOT_BOOLEAN = "'%s' is not a boolean. %s must be either 'true' or 'false'";
 	
 	private final Map<Class<?>, CommandWrapper<?>> commands = new LinkedHashMap<Class<?>, CommandWrapper<?>>();
 	private final Map<Class<?>, ConfirmationCommand<?>> confirmationCommands = new HashMap<Class<?>, ConfirmationCommand<?>>();
@@ -117,8 +117,8 @@ public class DeadmanExecutor implements CommandExecutor {
 			
 			@Override
 			public Result<Long> convertCommandArg(String argName, String arg) {
-				Long duration = DeadmanUtils.getDuration(arg);
-				return duration > 0 ? new Result<Long>(duration) : new Result<Long>(NOT_DURATION);
+				long duration = DeadmanUtils.parseDuration(arg);
+				return duration > 0 ? new Result<Long>(duration) : new Result<Long>(String.format(NOT_DURATION, argName));
 			}
 		});
 		registerConverter(Boolean.class, new ArgumentConverter<Boolean>() {
@@ -126,7 +126,7 @@ public class DeadmanExecutor implements CommandExecutor {
 			@Override
 			public Result<Boolean> convertCommandArg(String argName, String arg) {
 				Boolean bool = BooleanUtils.toBooleanObject(arg);
-				return bool != null ? new Result<Boolean>(bool) : new Result<Boolean>(String.format(NOT_BOOLEAN, arg));
+				return bool != null ? new Result<Boolean>(bool) : new Result<Boolean>(String.format(NOT_BOOLEAN, arg, argName));
 			}
 		});
 	}

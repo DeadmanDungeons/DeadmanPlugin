@@ -69,7 +69,7 @@ public abstract class Timer {
 	 */
 	@Override
 	public String toString() {
-		return DeadmanUtils.getDurationString(getTimeLeft());
+		return DeadmanUtils.formatDuration(getTimeLeft());
 	}
 	
 	public static boolean isAlive(Timer timer) {

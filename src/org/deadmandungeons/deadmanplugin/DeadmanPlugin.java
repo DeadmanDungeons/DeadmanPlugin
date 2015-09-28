@@ -1,18 +1,18 @@
 package org.deadmandungeons.deadmanplugin;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
-import net.milkbowl.vault.economy.Economy;
-import net.milkbowl.vault.permission.Permission;
+import java.util.logging.Level;
 
 import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import com.google.common.collect.ImmutableMap;
+import net.milkbowl.vault.economy.Economy;
+import net.milkbowl.vault.permission.Permission;
 
 /**
  * The base abstract class to be extended by the main class for all Deadman plugins.
@@ -23,8 +23,9 @@ public abstract class DeadmanPlugin extends JavaPlugin {
 	public static final String LANG_DIRECTORY = "lang" + File.separator;
 	public static final String DATA_DIRECTORY = "data" + File.separator;
 	
-	private static final Map<Class<? extends DeadmanPlugin>, DeadmanPlugin> plugins = new LinkedHashMap<Class<? extends DeadmanPlugin>, DeadmanPlugin>();
+	private static final Map<Class<? extends DeadmanPlugin>, DeadmanPlugin> plugins = new LinkedHashMap<>();
 	
+	private boolean loaded;
 	private Economy economy;
 	private Permission permissions;
 	
@@ -45,13 +46,23 @@ public abstract class DeadmanPlugin extends JavaPlugin {
 	
 	@Override
 	public final void onLoad() {
-		// this may be used in the future
-		
-		onPluginLoad();
+		loaded = true;
+		try {
+			onPluginLoad();
+		} catch (Throwable t) {
+			getLogger().log(Level.SEVERE, "An error occured while loading/initializing plugin", t);
+			loaded = false;
+		}
 	}
 	
 	@Override
 	public final void onEnable() {
+		if (!loaded) {
+			getLogger().severe("Plugin cannot be enabled due to an error that occurred during the plugin loading phase");
+			setEnabled(false);
+			return;
+		}
+		
 		onPluginEnable();
 		
 		if (isEnabled()) {
@@ -72,12 +83,13 @@ public abstract class DeadmanPlugin extends JavaPlugin {
 		
 		// Free up memory
 		plugins.remove(getClass());
+		loaded = false;
 	}
 	
 	/**
 	 * @see {@link #onLoad()}
 	 */
-	protected void onPluginLoad() {}
+	protected void onPluginLoad() throws Exception {}
 	
 	/**
 	 * @see {@link #onEnable()}
@@ -97,6 +109,10 @@ public abstract class DeadmanPlugin extends JavaPlugin {
 	 */
 	protected void onFirstServerTick() {}
 	
+	
+	public final boolean isLoaded() {
+		return loaded;
+	}
 	
 	public final boolean setupEconomy() {
 		if (economy == null) {
@@ -140,11 +156,11 @@ public abstract class DeadmanPlugin extends JavaPlugin {
 	
 	
 	/**
-	 * @return an ImmutableMap of all the currently instantiated DeadmanPlugins
+	 * @return an u nmodifiable Map of all the currently instantiated DeadmanPlugins
 	 * with the plugin Class as the Key, and the DeadmanPlugin instance as the value
 	 */
 	public static final Map<Class<? extends DeadmanPlugin>, DeadmanPlugin> getDeadmanPlugins() {
-		return ImmutableMap.copyOf(plugins);
+		return Collections.unmodifiableMap(plugins);
 	}
 	
 	/**

@@ -7,6 +7,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.lang.StringUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -30,8 +31,6 @@ import org.deadmandungeons.deadmanplugin.filedata.DataEntry.Key;
  */
 public class DeadmanUtils {
 	
-	private static final String DURATION_REGEX = "^\\d+[dD](:\\d+[hH](:\\d+[mM])?)?$|^\\d+[dD]:\\d+[mM]$|^\\d+[hH](:\\d+[mM])?$|^\\d+[mM]$";
-	private static final Pattern DURATION_PATTERN = Pattern.compile(DURATION_REGEX);
 	private static final Pattern LOCATION_PATTERN = Pattern.compile("X(-?\\d+)Y(-?\\d+)Z(-?\\d+)W(.+)");
 	private static final Pattern UUID_PATTERN = Pattern.compile("^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$");
 	
@@ -53,7 +52,7 @@ public class DeadmanUtils {
 	 * @return - the amount of time passed in the format of:<br>
 	 * # day(s), # (hour|hr)(s), # (minute|min)(s), # second(s)
 	 */
-	public static String getDurationString(long millis) {
+	public static String formatDuration(long millis) {
 		String formattedTimer = "";
 		
 		int days = (int) TimeUnit.MILLISECONDS.toDays(millis);
@@ -81,8 +80,8 @@ public class DeadmanUtils {
 	}
 	
 	/**
-	 * This method will check if the given string matches the timer sign format which is a colon delimited set of
-	 * time amounts. Supported time intervals are days, hours, and minutes in the format '#d:#h:#m' <br>
+	 * This method will parse a colon delimited set of time amounts and calculate the duration in milliseconds.
+	 * Supported time intervals are days, hours, and minutes in the format '#d:#h:#m' <br>
 	 * Example time amounts:
 	 * <ul>
 	 * <li>11d:12h:30m</li>
@@ -90,39 +89,41 @@ public class DeadmanUtils {
 	 * <li>5d:45m</li>
 	 * <li>45m</li>
 	 * </ul>
-	 * @param duration - The amount of time given in the format stated above
-	 * @return the duration of time in milliseconds from the sign formatted duration String
+	 * @param durationStr - The String representation of a duration of time given in the format stated above
+	 * @return the duration of time in milliseconds from the formatted duration String. 0 will be returned if durationStr is invalid.
 	 */
-	public static long getDuration(String duration) {
-		if (duration != null && DURATION_PATTERN.matcher(duration).matches()) {
-			int days = 0;
-			int hours = 0;
-			int minutes = 0;
-			
-			Pattern pattern;
-			Matcher matcher;
-			String daysRegex = "\\d+[dD]";
-			pattern = Pattern.compile(daysRegex);
-			matcher = pattern.matcher(duration);
-			if (matcher.find()) {
-				days = Integer.parseInt(matcher.group().replaceAll("[^\\d]", ""));
+	public static long parseDuration(String durationStr) {
+		long duration = 0;
+		if (durationStr != null) {
+			for (String durationPartStr : durationStr.split(":")) {
+				long durationPart = parseDurationPart(durationPartStr.trim());
+				if (durationPart == -1) {
+					return 0;
+				}
+				duration += durationPart;
 			}
-			String hoursRegex = "\\d+[hH]";
-			pattern = Pattern.compile(hoursRegex);
-			matcher = pattern.matcher(duration);
-			if (matcher.find()) {
-				hours = Integer.parseInt(matcher.group().replaceAll("[^\\d]", ""));
-			}
-			String minutesRegex = "\\d+[mM]";
-			pattern = Pattern.compile(minutesRegex);
-			matcher = pattern.matcher(duration);
-			if (matcher.find()) {
-				minutes = Integer.parseInt(matcher.group().replaceAll("[^\\d]", ""));
-			}
-			
-			return (days * 86400000L) + (hours * 3600000) + (minutes * 60000);
 		}
-		return 0;
+		return duration;
+	}
+	
+	private static long parseDurationPart(String durationPart) {
+		if (durationPart == null || durationPart.length() < 2) {
+			return -1;
+		}
+		String duration = durationPart.substring(0, durationPart.length() - 1);
+		if (!StringUtils.isNumeric(duration)) {
+			return -1;
+		}
+		
+		char measure = durationPart.charAt(durationPart.length() - 1);
+		if (measure == 'd' || measure == 'D') {
+			return TimeUnit.DAYS.toMillis(Integer.parseInt(duration));
+		} else if (measure == 'h' || measure == 'H') {
+			return TimeUnit.HOURS.toMillis(Integer.parseInt(duration));
+		} else if (measure == 'm' || measure == 'M') {
+			return TimeUnit.MINUTES.toMillis(Integer.parseInt(duration));
+		}
+		return -1;
 	}
 	
 	public static String getOrdinalSuffix(int value) {

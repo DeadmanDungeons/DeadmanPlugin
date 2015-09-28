@@ -2,6 +2,7 @@ package org.deadmandungeons.deadmanplugin;
 
 import java.util.UUID;
 
+import org.apache.commons.lang.Validate;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -21,17 +22,31 @@ public class PlayerID {
 	
 	private final String asString;
 	
-	public PlayerID(UUID uuid, String username) {
+	
+	/**
+	 * @param player - The {@link OfflinePlayer} to create a PlayerID from
+	 * @throws IllegalArgumentException if player is null
+	 */
+	public PlayerID(OfflinePlayer player) throws IllegalArgumentException {
+		Validate.notNull(player, "player cannot be null");
+		this.uuid = player.getUniqueId();
+		this.username = player.getName();
+		asString = DataEntry.builder().withPlayerID(this).build().toString();
+	}
+	
+	/**
+	 * @param uuid - The UUID of the player
+	 * @param username - The players username
+	 * @throws IllegalArgumentException if uuid or username are null
+	 */
+	public PlayerID(UUID uuid, String username) throws IllegalArgumentException {
+		Validate.notNull(uuid, "uuid cannot be null");
+		Validate.notNull(username, "username cannot be null");
 		this.uuid = uuid;
 		this.username = username;
 		asString = DataEntry.builder().withPlayerID(this).build().toString();
 	}
 	
-	public PlayerID(OfflinePlayer player) {
-		this.uuid = player.getUniqueId();
-		this.username = player.getName();
-		asString = DataEntry.builder().withPlayerID(this).build().toString();
-	}
 	
 	public UUID getUUID() {
 		return uuid;
@@ -66,7 +81,7 @@ public class PlayerID {
 	 * @return true if the given username is not null and it equals the username of this PlayerID ignoring case
 	 */
 	public boolean equalsUsername(String username) {
-		return username != null && this.username.equalsIgnoreCase(username);
+		return this.username.equalsIgnoreCase(username);
 	}
 	
 	@Override

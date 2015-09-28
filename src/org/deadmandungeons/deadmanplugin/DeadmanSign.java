@@ -30,7 +30,7 @@ import com.google.common.collect.ImmutableList;
  */
 public abstract class DeadmanSign<T> {
 	
-	private static final String INVALID_SIGN_ENTRY = "The sign entry '%s' in the %2$s data list at path '%s.%2$s' is invalid! This entry will be removed from file.";
+	private static final String INVALID_SIGN_ENTRY = "The sign entry '%1$s' in the %2$s data list at path '%3$s.%2$s' is invalid! This sign cannot be loaded.";
 	
 	// This is the most ridiculous Generic use ever
 	private static final Map<Class<? extends DeadmanSign<?>>, DeadmanSignHandler<?, ? extends DeadmanSign<?>>> handlers = new HashMap<Class<? extends DeadmanSign<?>>, DeadmanSignHandler<?, ? extends DeadmanSign<?>>>();
@@ -104,13 +104,13 @@ public abstract class DeadmanSign<T> {
 	public abstract String[] getLines();
 	
 	/**
-	 * log a severe message stating that the given dataEntry was invalid and that it will be removed from file
+	 * log a warning message stating that the given dataEntry was invalid and that the sign cannot be loaded
 	 * @param entry - The invalid DataEntry
 	 * @param property - The name of the config property containing the invalid DataEntry
 	 * @param configPath - The path to the given property
 	 */
 	public static void alertInvalidEntry(DeadmanPlugin plugin, DataEntry entry, String property, String configPath) {
-		plugin.getLogger().severe(String.format(INVALID_SIGN_ENTRY, entry.toString(), property, configPath));
+		plugin.getLogger().warning(String.format(INVALID_SIGN_ENTRY, entry.toString(), property, configPath));
 	}
 	
 	/**

@@ -10,6 +10,7 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Sound;
 import org.bukkit.command.Command;
@@ -39,7 +40,7 @@ public class Messenger {
 	
 	private static final String BAD_COLOR = "The '%s' property is either missing from the lang file or an invalid value. Defaulting to %s.";
 	
-	private Map<String, String> cachedMessages = new HashMap<String, String>();
+	private final Map<String, String> cachedMessages = new HashMap<String, String>();
 	
 	private ChatColor primaryColor;
 	private ChatColor secondaryColor;
@@ -76,7 +77,7 @@ public class Messenger {
 	public void setLangFile(PluginFile langFile) {
 		Validate.notNull(langFile, "langFile cannot be null");
 		this.langFile = langFile;
-		clearCache();
+		reload();
 	}
 	
 	/**
@@ -155,7 +156,7 @@ public class Messenger {
 		if (sender instanceof Player) {
 			final Player player = (Player) sender;
 			player.playSound(player.getLocation(), Sound.ORB_PICKUP, 1, .5F);
-			plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+			Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
 				
 				@Override
 				public void run() {
@@ -325,13 +326,15 @@ public class Messenger {
 	}
 	
 	/**
-	 * Clear any cached messages forcing them to pull them from the config again
+	 * Clear any cached messages and reload the language file
 	 */
-	public void clearCache() {
+	public void reload() {
 		cachedMessages.clear();
 		primaryColor = null;
 		secondaryColor = null;
 		tertiaryColor = null;
+		
+		langFile.reloadConfig();
 	}
 	
 	/**
