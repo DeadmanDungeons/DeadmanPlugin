@@ -24,7 +24,10 @@ import org.deadmandungeons.deadmanplugin.filedata.DataEntry;
 import com.google.common.collect.ImmutableList;
 
 /**
- * This abstract class is to be implemented to define a certain Sign type which represents objects of type T.
+ * Minecraft Sign blocks can be used as user interfaces since they can display text, and can be interacted with.
+ * This abstract class is a template that provides the base functionality for binding an object to an sign block
+ * which can be interacted with. An implementation of this class represents a certain Sign type which can bind
+ * objects of type T to an actual Sign block in a world.
  * @param <T> - The type of the object that the DeadmanSign represents
  * @author Jon
  */
@@ -33,7 +36,7 @@ public abstract class DeadmanSign<T> {
 	private static final String INVALID_SIGN_ENTRY = "The sign entry '%1$s' in the %2$s data list at path '%3$s.%2$s' is invalid! This sign cannot be loaded.";
 	
 	// This is the most ridiculous Generic use ever
-	private static final Map<Class<? extends DeadmanSign<?>>, DeadmanSignHandler<?, ? extends DeadmanSign<?>>> handlers = new HashMap<Class<? extends DeadmanSign<?>>, DeadmanSignHandler<?, ? extends DeadmanSign<?>>>();
+	private static final Map<Class<? extends DeadmanSign<?>>, DeadmanSignHandler<?, ? extends DeadmanSign<?>>> handlers = new HashMap<>();
 	
 	private final Sign sign;
 	private final DataEntry dataEntry;
@@ -116,7 +119,7 @@ public abstract class DeadmanSign<T> {
 	/**
 	 * This will unregister the events of any {@link DeadmanSignHandler} that was previously set for the
 	 * given {@link DeadmanSign} class if any, and register the events of the given DeadmanSignHandler
-	 * @param signClass - The class of the DeadmanSign the DeadmanSignHandler is for
+	 * @param signClass - The class of the DeadmanSign the handler should be bound to
 	 * @param handler - The instance of the DeadmanSignHandler to set as the handler for all stored instances of the given DeadmanSign type
 	 */
 	public static <V, T extends DeadmanSign<V>> void setHandler(Class<T> signClass, DeadmanSignHandler<V, T> handler) {
@@ -132,8 +135,8 @@ public abstract class DeadmanSign<T> {
 	}
 	
 	/**
-	 * @param signClass - The class of the {@link DeadmanSign} the desired {@link DeadmanSignHandler} is for
-	 * @return the DeadmanSignHandler instance that was set for the given DeadmanSign class or if null no DeadmanSignHandler was set
+	 * @param signClass - The class of the {@link DeadmanSign} the desired {@link DeadmanSignHandler} is bound to
+	 * @return the DeadmanSignHandler instance that was bound to the given DeadmanSign class or if null no DeadmanSignHandler was set
 	 */
 	public static <V, T extends DeadmanSign<V>> DeadmanSignHandler<V, T> getHandler(Class<T> signClass) {
 		Validate.notNull(signClass, "signClass cannot be null");
@@ -143,10 +146,11 @@ public abstract class DeadmanSign<T> {
 	}
 	
 	
+	// TODO make the deadmanSigns datastore unmodifiable and handle modification in this class. break event
+	// will not remove if event is canceled, and create event... figure that one out.
 	/**
 	 * This Listener class is provided to improve modularity with events relating to DeadmanSigns.
-	 * Extend this class for each {@link DeadmanSign} of type T.<br />
-	 * Construct this object for each DeadmanSign type that the plugin will be listening to.
+	 * Extend this class for each {@link DeadmanSign} of type T that the plugin will be listening to.<br />
 	 * Call {@link DeadmanSign#setHandler(Class, DeadmanSignHandler)} to register the Sign events and
 	 * bind a handler to the DeadmanSign of type T.<br>
 	 * All DeadmanSigns of type T that are created should be stored in this class's deadmanSigns HashMap
@@ -157,7 +161,7 @@ public abstract class DeadmanSign<T> {
 	 */
 	public static abstract class DeadmanSignHandler<V, T extends DeadmanSign<V>> implements Listener {
 		
-		private Map<Location, T> deadmanSigns = new HashMap<Location, T>();
+		private final Map<Location, T> deadmanSigns = new HashMap<Location, T>();
 		
 		private final List<String> signTags;
 		private final DeadmanPlugin plugin;

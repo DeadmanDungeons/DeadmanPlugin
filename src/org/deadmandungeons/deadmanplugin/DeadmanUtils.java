@@ -23,7 +23,6 @@ import org.bukkit.metadata.Metadatable;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.util.BlockIterator;
 import org.deadmandungeons.deadmanplugin.filedata.DataEntry;
-import org.deadmandungeons.deadmanplugin.filedata.DataEntry.Key;
 
 /**
  * A utility class containing various useful methods which are commonly used throughout Deadman plugins
@@ -192,32 +191,58 @@ public class DeadmanUtils {
 		return false;
 	}
 	
+	/**
+	 * @param block - The block to check for a Sign block state
+	 * @return the Sign block state the given block has or null if the given block is not a sign
+	 */
 	public static Sign getSignState(Block block) {
-		return getSignState(block, null);
+		return getSignState(block, (MaterialData) null);
 	}
 	
+	/**
+	 * Synonymous to {@link #getSignState(Block, MaterialData) getSignState(block, dataEntry.getMaterialData());}
+	 * @param block - The block to check for a Sign block state
+	 * @param dataEntry - The DataEntry containing the Sign {@link MaterialData} that will be used to force reset the
+	 * state of the given block if it is not a sign. If this is null, the block will not be force reset to a sign block state.
+	 * @return the Sign block state the given block had (or has if its block state was reset). Or null if the given block
+	 * is not a sign and it was not forcefully reset as one.
+	 */
+	public static Sign getSignState(Block block, DataEntry dataEntry) {
+		return getSignState(block, dataEntry.getMaterialData());
+	}
+	
+	/**
+	 * @param block - The block to check for a Sign block state
+	 * @param data - The Sign {@link MaterialData} that will be used to force reset the state of the given block if it is not a sign.
+	 * If this is null, the block will not be force reset to a sign block state.
+	 * @return the Sign block state the given block had (or has if its block state was reset). Or null if the given block
+	 * is not a sign and it was not forcefully reset as one.
+	 */
 	public static Sign getSignState(Block block, MaterialData data) {
 		Sign sign = null;
 		if (block != null) {
 			if (block.getType() == Material.SIGN_POST || block.getType() == Material.WALL_SIGN) {
 				sign = (Sign) block.getState();
 			}
-			if (sign == null && data != null) {
+			if (sign == null && data != null && (data.getItemType() == Material.SIGN_POST || data.getItemType() == Material.WALL_SIGN)) {
 				boolean success = block.setTypeIdAndData(data.getItemTypeId(), data.getData(), true);
-				if (success && (block.getType() == Material.SIGN_POST || block.getType() == Material.WALL_SIGN)) {
-					sign = (Sign) block.getState();
-				}
+				sign = (success ? getSignState(block) : null);
 			}
 		}
 		return sign;
 	}
 	
+	/**
+	 * @param block - The block to reset
+	 * @param dataEntry - The DataEntry containing the {@link MaterialData} of what the given block should be reset to.
+	 * @return true if the given block was successfully reset using the MaterialData specified by the given DataEntry.
+	 * Or false if the given block or dataEntry is null or if dataEntry does not specify MaterialData.
+	 */
 	public static boolean resetBlock(Block block, DataEntry dataEntry) {
 		if (block != null && dataEntry != null) {
-			Number blockId = dataEntry.getNumber(Key.ID);
-			Number blockData = dataEntry.getNumber(Key.DATA);
-			if (blockId != null && blockData != null) {
-				return block.setTypeIdAndData(blockId.intValue(), blockData.byteValue(), true);
+			MaterialData data = dataEntry.getMaterialData();
+			if (data != null) {
+				return block.setTypeIdAndData(data.getItemTypeId(), data.getData(), true);
 			}
 		}
 		return false;
