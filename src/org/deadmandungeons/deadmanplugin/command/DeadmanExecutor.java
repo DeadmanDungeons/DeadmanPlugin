@@ -139,7 +139,7 @@ public class DeadmanExecutor implements CommandExecutor {
 		}
 		if (args[0].equals("?") || args[0].equalsIgnoreCase("help")) {
 			if (args.length == 2) {
-				if (StringUtils.isNumeric(args[1])) {
+				if (DeadmanUtils.isNumeric(args[1])) {
 					messenger.sendHelpInfo(bukkitCmd, sender, commands, Integer.parseInt(args[1]));
 					return true;
 				} else {
@@ -472,7 +472,7 @@ public class DeadmanExecutor implements CommandExecutor {
 		Validate.notNull(helpArg, "helpArg cannot be null");
 		Validate.notNull(messagePath, "messagePath cannot be null");
 		String arg = helpArg.trim().toLowerCase();
-		if (StringUtils.isNumeric(arg)) {
+		if (DeadmanUtils.isNumeric(arg)) {
 			throw new IllegalArgumentException("helpArg must not be a number");
 		}
 		

@@ -4,14 +4,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang.StringUtils;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;
@@ -30,7 +27,6 @@ import org.deadmandungeons.deadmanplugin.filedata.DataEntry;
  */
 public class DeadmanUtils {
 	
-	private static final Pattern LOCATION_PATTERN = Pattern.compile("X(-?\\d+)Y(-?\\d+)Z(-?\\d+)W(.+)");
 	private static final Pattern UUID_PATTERN = Pattern.compile("^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$");
 	
 	// protected constructor to allow this util class to be extended
@@ -110,7 +106,7 @@ public class DeadmanUtils {
 			return -1;
 		}
 		String duration = durationPart.substring(0, durationPart.length() - 1);
-		if (!StringUtils.isNumeric(duration)) {
+		if (!isNumeric(duration)) {
 			return -1;
 		}
 		
@@ -221,15 +217,19 @@ public class DeadmanUtils {
 	public static Sign getSignState(Block block, MaterialData data) {
 		Sign sign = null;
 		if (block != null) {
-			if (block.getType() == Material.SIGN_POST || block.getType() == Material.WALL_SIGN) {
+			if (isSign(block.getType())) {
 				sign = (Sign) block.getState();
 			}
-			if (sign == null && data != null && (data.getItemType() == Material.SIGN_POST || data.getItemType() == Material.WALL_SIGN)) {
+			if (sign == null && data != null && isSign(data.getItemType())) {
 				boolean success = block.setTypeIdAndData(data.getItemTypeId(), data.getData(), true);
 				sign = (success ? getSignState(block) : null);
 			}
 		}
 		return sign;
+	}
+	
+	public static boolean isSign(Material type) {
+		return type == Material.SIGN_POST || type == Material.WALL_SIGN;
 	}
 	
 	/**
@@ -249,7 +249,7 @@ public class DeadmanUtils {
 	}
 	
 	public static void clearSign(Sign sign) {
-		if (sign != null) {
+		if (sign != null && sign.getBlock().getState().equals(sign)) {
 			sign.setLine(0, "");
 			sign.setLine(1, "");
 			sign.setLine(2, "");
@@ -257,39 +257,6 @@ public class DeadmanUtils {
 			sign.update(true);
 		}
 	}
-	
-	/**
-	 * This is used to convert the given String config key into a Location object<br />
-	 * The given String key must be in the format of:<br />
-	 * <code>X&lt;x-coord&gt;Y&lt;y-coord&gt;Z&lt;z-coord&gt;W&lt;world&gt;</code><br />
-	 * Example: X351Y154Z-1478Wempire
-	 * @param key - The String key in the format of a location to be converted into a Location
-	 * @return The Location the given String key represents or null if the key is improperly formatted
-	 */
-	public static Location getLocationFromKey(String key) {
-		if (key != null && !key.isEmpty()) {
-			Matcher matcher = LOCATION_PATTERN.matcher(key);
-			if (matcher.find()) {
-				int xCoord = Integer.parseInt(matcher.group(1));
-				int yCoord = Integer.parseInt(matcher.group(2));
-				int zCoord = Integer.parseInt(matcher.group(3));
-				World world = Bukkit.getWorld(matcher.group(4));
-				if (world != null) {
-					return new Location(world, xCoord, yCoord, zCoord);
-				}
-			}
-		}
-		return null;
-	}
-	
-	/**
-	 * @param loc - The Location that the returned String should represent
-	 * @return A String representation of the given Location in the format used for config data keys
-	 */
-	public static String formatLocationKey(Location loc) {
-		return "X" + loc.getBlockX() + "Y" + loc.getBlockY() + "Z" + loc.getBlockZ() + "W" + loc.getWorld().getName();
-	}
-	
 	
 	public static List<String> toStringList(Collection<?> list) {
 		List<String> strList = new ArrayList<String>();
@@ -318,6 +285,10 @@ public class DeadmanUtils {
 			return false;
 		}
 		return true;
+	}
+	
+	public static boolean isNumeric(String number) {
+		return number != null && !number.isEmpty() && StringUtils.isNumeric(number);
 	}
 	
 	public static boolean isUUID(String uuid) {
