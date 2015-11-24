@@ -31,7 +31,7 @@ public class PlayerID {
 		Validate.notNull(player, "player cannot be null");
 		this.uuid = player.getUniqueId();
 		this.username = player.getName();
-		asString = DataEntry.builder().withPlayerID(this).build().toString();
+		asString = DataEntry.builder().playerID(this).build().toString();
 	}
 	
 	/**
@@ -44,7 +44,7 @@ public class PlayerID {
 		Validate.notNull(username, "username cannot be null");
 		this.uuid = uuid;
 		this.username = username;
-		asString = DataEntry.builder().withPlayerID(this).build().toString();
+		asString = DataEntry.builder().playerID(this).build().toString();
 	}
 	
 	

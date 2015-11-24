@@ -15,7 +15,7 @@ public abstract class Timer {
 	
 	protected final long duration;
 	
-	protected Timer(long duration) {
+	Timer(long duration) {
 		Validate.isTrue(duration > 0, "duration must be greater than 0");
 		this.duration = duration;
 	}

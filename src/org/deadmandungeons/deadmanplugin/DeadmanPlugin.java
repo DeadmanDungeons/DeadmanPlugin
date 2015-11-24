@@ -10,6 +10,7 @@ import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.deadmandungeons.deadmanplugin.filedata.DeadmanConfig;
 
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.permission.Permission;
@@ -28,6 +29,7 @@ public abstract class DeadmanPlugin extends JavaPlugin {
 	private boolean loaded;
 	private Economy economy;
 	private Permission permissions;
+	private DeadmanConfig config;
 	
 	/**
 	 * no-arg constructor called by the Craftbukkit classloader
@@ -55,6 +57,11 @@ public abstract class DeadmanPlugin extends JavaPlugin {
 		}
 	}
 	
+	/**
+	 * @see {@link #onLoad()}
+	 */
+	protected void onPluginLoad() throws Exception {}
+	
 	@Override
 	public final void onEnable() {
 		if (!loaded) {
@@ -77,6 +84,11 @@ public abstract class DeadmanPlugin extends JavaPlugin {
 		}
 	}
 	
+	/**
+	 * @see {@link #onEnable()}
+	 */
+	protected void onPluginEnable() {}
+	
 	@Override
 	public final void onDisable() {
 		onPluginDisable();
@@ -85,16 +97,6 @@ public abstract class DeadmanPlugin extends JavaPlugin {
 		plugins.remove(getClass());
 		loaded = false;
 	}
-	
-	/**
-	 * @see {@link #onLoad()}
-	 */
-	protected void onPluginLoad() throws Exception {}
-	
-	/**
-	 * @see {@link #onEnable()}
-	 */
-	protected void onPluginEnable() {}
 	
 	/**
 	 * @see {@link #onDisable()}
@@ -109,6 +111,22 @@ public abstract class DeadmanPlugin extends JavaPlugin {
 	 */
 	protected void onFirstServerTick() {}
 	
+	
+	@Override
+	public void reloadConfig() {
+		super.reloadConfig();
+		if (config != null) {
+			config.loadEntries(this);
+		}
+	}
+	
+	public final void setConfig(DeadmanConfig config) {
+		if (config != null) {
+			saveDefaultConfig();
+			config.loadEntries(this);
+		}
+		this.config = config;
+	}
 	
 	public final boolean isLoaded() {
 		return loaded;

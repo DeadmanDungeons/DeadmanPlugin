@@ -11,10 +11,12 @@ import org.apache.commons.lang.math.NumberUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
 import org.bukkit.material.MaterialData;
 import org.deadmandungeons.deadmanplugin.DeadmanUtils;
 import org.deadmandungeons.deadmanplugin.PlayerID;
+import org.deadmandungeons.deadmanplugin.WorldCoord;
 import org.deadmandungeons.deadmanplugin.timer.GlobalTimer;
 import org.deadmandungeons.deadmanplugin.timer.LocalTimer;
 import org.deadmandungeons.deadmanplugin.timer.Timer;
@@ -42,16 +44,16 @@ public class DataEntry implements Cloneable {
 	 * Construct an empty DataEntry instance
 	 */
 	public DataEntry() {
-		values = new HashMap<String, Object>();
+		this((String) null);
 	}
 	
 	/**
-	 * Construct a DataEntry instance with the key/value pairs defined in the given entryStr
+	 * Construct a DataEntry instance with the key/value pairs defined in the given entryStr.<br>
 	 * The given String entry should be in the format as specified by {@link DataEntry#toString()}
 	 * @param entry - The raw data entry String containing the key/value pairs to include in the returned DataEntry
 	 */
 	public DataEntry(String entryStr) {
-		this();
+		values = new HashMap<String, Object>();
 		if (entryStr != null) {
 			Matcher valueMatcher = VALUE_PATTERN.matcher(entryStr);
 			while (valueMatcher.find()) {
@@ -62,6 +64,16 @@ public class DataEntry implements Cloneable {
 		}
 	}
 	
+	/**
+	 * This simply returns {@link #DataEntry(Block)}.<br>
+	 * In some circumstances, the english-like nature of the code to invoke this method may
+	 * be more understandable and readable than using the constructor.
+	 * @param entryStr - The raw data entry String containing the key/value pairs to include in the returned DataEntry
+	 * @return a new DataEntry instance with the key/value pairs defined in the given entryStr
+	 */
+	public static DataEntry of(String entryStr) {
+		return new DataEntry(entryStr);
+	}
 	
 	/**
 	 * @return a new DataEntry.Builder instance
@@ -94,14 +106,32 @@ public class DataEntry implements Cloneable {
 		
 		protected abstract T self();
 		
+		
+		/**
+		 * @deprecated for {@link #location(Location)}
+		 */
+		@Deprecated
+		public final T withLocation(Location location) {
+			return location(location);
+		}
+		
 		/**
 		 * @see {@link DataEntry#setLocation(Location)}
 		 * @param location - The location to set in the built DataEntry
 		 * @return this builder
 		 */
-		public final T withLocation(Location location) {
+		public final T location(Location location) {
 			this.location = location;
 			return self();
+		}
+		
+		
+		/**
+		 * @deprecated for {@link #materialData(MaterialData)}
+		 */
+		@Deprecated
+		public final T withMaterialData(MaterialData materialData) {
+			return materialData(materialData);
 		}
 		
 		/**
@@ -109,19 +139,51 @@ public class DataEntry implements Cloneable {
 		 * @param materialData - The MaterialData to set in the built DataEntry
 		 * @return this builder
 		 */
-		public final T withMaterialData(MaterialData materialData) {
+		public final T materialData(MaterialData materialData) {
 			this.materialData = materialData;
 			return self();
 		}
 		
+		/**
+		 * @deprecated for {@link #timer(Timer)}
+		 */
+		@Deprecated
 		public final T withTimer(Timer timer) {
+			return timer(timer);
+		}
+		
+		/**
+		 * @param timer - The Timer to set in the built DataEntry
+		 * @return this builder
+		 */
+		public final T timer(Timer timer) {
 			this.timer = timer;
 			return self();
 		}
 		
+		/**
+		 * @deprecated for {@link #playerID(PlayerID)}
+		 */
+		@Deprecated
 		public final T withPlayerID(PlayerID playerId) {
+			return playerID(playerId);
+		}
+		
+		/**
+		 * @param playerId - The PlayerID to set in the built DataEntry
+		 * @return this builder
+		 */
+		public final T playerID(PlayerID playerId) {
 			this.playerId = playerId;
 			return self();
+		}
+		
+		/**
+		 * @deprecated for {@link #value(Enum, Object)}
+		 */
+		@Deprecated
+		public final T withValue(Enum<?> key, Object value) {
+			return value(key, value);
 		}
 		
 		/**
@@ -131,7 +193,7 @@ public class DataEntry implements Cloneable {
 		 * @throws IllegalArgumentException if the given value has a comma in its String representation
 		 * @return this builder
 		 */
-		public final T withValue(Enum<?> key, Object value) {
+		public final T value(Enum<?> key, Object value) {
 			if (value.toString().contains(",")) {
 				throw new IllegalArgumentException(String.format(INVALID_MSG_2, key));
 			}
@@ -205,7 +267,8 @@ public class DataEntry implements Cloneable {
 	
 	/**
 	 * @param key - The Enum Key representing the Number to get
-	 * @return A Number object of the value indexed by the given Key, or null if a Number value did not exist at the given Key
+	 * @return A Number object of the value indexed by the given Key,
+	 * or null if a Number value did not exist at the given Key
 	 */
 	public final Number getNumber(Enum<?> key) {
 		return getNumber(key, null);
@@ -233,7 +296,8 @@ public class DataEntry implements Cloneable {
 	
 	
 	/**
-	 * @return The {@link World} object indexed at key {@link Key#WORLD}, or null if a World value does not exist for the respective Key
+	 * @return The {@link World} object indexed at key {@link Key#WORLD},
+	 * or null if a World value does not exist for the respective Key
 	 */
 	public final World getWorld() {
 		Object value = getValue(Key.WORLD);
@@ -255,18 +319,67 @@ public class DataEntry implements Cloneable {
 		setValue(Key.WORLD, world.getName());
 	}
 	
+	
 	/**
-	 * @return the Location defined by keys: {@link Key#WORLD}, {@link Key#XCOORD}, {@link Key#YCOORD}, {@link Key#ZCOORD}, and optionally
-	 * {@link Key#YAW}, {@link Key#PITCH}. Or null if the minimum required
-	 * values did not exist, or were invalid
+	 * @return the WorldCoord defined by keys: {@link Key#WORLD}, {@link Key#X}, {@link Key#Y}, {@link Key#Z}.
+	 * Or null if the minimum required values did not exist, or were invalid
+	 */
+	public final WorldCoord getWorldCoord() {
+		World world = getWorld();
+		Number x = getNumber(Key.X);
+		Number y = getNumber(Key.Y);
+		Number z = getNumber(Key.Z);
+		if (world != null && x != null && y != null && z != null) {
+			int yInt = y.intValue();
+			if (yInt >= 0 && yInt <= world.getMaxHeight()) {
+				return new WorldCoord(world, x.intValue(), yInt, z.intValue());
+			}
+		}
+		return null;
+	}
+	
+	/**
+	 * @param coord - The {@link WorldCoord} object to set and be represented by the
+	 * {@link Key#WORLD}, {@link Key#X}, {@link Key#Y}, and {@link Key#Z} keys.<br>
+	 * If coord is null, all of the above key/value pairs will be removed from this DataEntry.
+	 */
+	public final void setWorldCoord(WorldCoord coord) {
+		if (coord != null) {
+			setWorld(coord.getWorld());
+			setValue(Key.X, coord.getX());
+			setValue(Key.Y, coord.getY());
+			setValue(Key.Z, coord.getZ());
+		} else {
+			setWorld(null);
+			setValue(Key.X, null);
+			setValue(Key.Y, null);
+			setValue(Key.Z, null);
+		}
+	}
+	
+	/**
+	 * @param coord - The {@link WorldCoord} to be formatted
+	 * @return the formatted String representation of the given WorldCoord with the keys:
+	 * {@link Key#WORLD}, {@link Key#X}, {@link Key#Y}, {@link Key#Z}
+	 */
+	public static String formatWorldCoord(WorldCoord coord) {
+		return format(ImmutableMap.<Enum<?>, Object> of(Key.WORLD, coord.getWorld().getName(), Key.X, coord.getX(), Key.Y, coord.getY(), Key.Z,
+				coord.getZ()));
+	}
+	
+	
+	/**
+	 * @return the Location defined by keys: {@link Key#WORLD}, {@link Key#X}, {@link Key#Y},
+	 * {@link Key#Z}, and optionally {@link Key#YAW}, {@link Key#PITCH}.
+	 * Or null if the minimum required values did not exist, or were invalid
 	 */
 	public final Location getLocation() {
 		World world = getWorld();
-		Number xCoord = getNumber(Key.X);
-		Number yCoord = getNumber(Key.Y);
-		Number zCoord = getNumber(Key.Z);
-		if (world != null && xCoord != null && yCoord != null && zCoord != null) {
-			Location loc = new Location(world, xCoord.doubleValue(), yCoord.doubleValue(), zCoord.doubleValue());
+		Number x = getNumber(Key.X);
+		Number y = getNumber(Key.Y);
+		Number z = getNumber(Key.Z);
+		if (world != null && x != null && y != null && z != null) {
+			Location loc = new Location(world, x.doubleValue(), y.doubleValue(), z.doubleValue());
 			Number yaw = getNumber(Key.YAW);
 			Number pitch = getNumber(Key.PITCH);
 			if (yaw != null && pitch != null) {
@@ -279,17 +392,17 @@ public class DataEntry implements Cloneable {
 	}
 	
 	/**
-	 * @param location - The {@link Location} object to set and be represented by the {@link Key#WORLD}, {@link Key#XCOORD}, {@link Key#YCOORD}, and
-	 * {@link Key#ZCOORD} keys. <br>
+	 * @param location - The {@link Location} object to set and be represented by the
+	 * {@link Key#WORLD}, {@link Key#X}, {@link Key#Y}, and {@link Key#Z} keys. <br>
 	 * If the yaw or pitch is not 0, they will also be represented by the {@link Key#YAW}, and {@link Key#PITCH} keys. <br>
 	 * If location is null, all of the above key/value pairs will be removed from this DataEntry.
 	 */
 	public final void setLocation(Location location) {
 		if (location != null) {
 			setWorld(location.getWorld());
-			setValue(Key.X, location.getBlockX());
-			setValue(Key.Y, location.getBlockY());
-			setValue(Key.Z, location.getBlockZ());
+			setValue(Key.X, doubleOrInt(location.getX()));
+			setValue(Key.Y, doubleOrInt(location.getY()));
+			setValue(Key.Z, doubleOrInt(location.getZ()));
 			setValue(Key.YAW, (location.getYaw() != 0 ? location.getYaw() : null));
 			setValue(Key.PITCH, (location.getPitch() != 0 ? location.getPitch() : null));
 		} else {
@@ -304,12 +417,13 @@ public class DataEntry implements Cloneable {
 	
 	/**
 	 * @param loc - the {@link Location} to be formatted
-	 * @return the formatted String representation of the given Location with the keys: {@link Key#WORLD}, {@link Key#XCOORD}, {@link Key#YCOORD},
-	 * {@link Key#ZCOORD}, and optionally {@link Key#YAW}, {@link Key#PITCH}
+	 * @return the formatted String representation of the given Location with the keys:
+	 * {@link Key#WORLD}, {@link Key#X}, {@link Key#Y}, {@link Key#Z}, and optionally {@link Key#YAW}, {@link Key#PITCH}
 	 */
 	public static String formatLocation(Location loc) {
 		ImmutableMap.Builder<Enum<?>, Object> mapBuilder = ImmutableMap.builder();
-		mapBuilder.put(Key.WORLD, loc.getWorld().getName()).put(Key.X, loc.getBlockX()).put(Key.Y, loc.getBlockY()).put(Key.Z, loc.getBlockZ());
+		mapBuilder.put(Key.WORLD, loc.getWorld().getName()).put(Key.X, doubleOrInt(loc.getX())).put(Key.Y, doubleOrInt(loc.getY())).put(Key.Z,
+				doubleOrInt(loc.getZ()));
 		if (loc.getYaw() != 0) {
 			mapBuilder.put(Key.YAW, loc.getYaw());
 		}
@@ -317,6 +431,13 @@ public class DataEntry implements Cloneable {
 			mapBuilder.put(Key.PITCH, loc.getPitch());
 		}
 		return format(mapBuilder.build());
+	}
+	
+	private static Object doubleOrInt(double coordValue) {
+		if (coordValue % 1 == 0) {
+			return (int) coordValue;
+		}
+		return coordValue;
 	}
 	
 	
@@ -358,26 +479,38 @@ public class DataEntry implements Cloneable {
 	/**
 	 * This DataEntry must contain the key/value pairs for the {@link Key#DURATION} key,
 	 * and either the {@link Key#EXPIRE} key or the {@link Key#ELAPSED} key.
-	 * @param global - The boolean flag stating weather or not the timer is global (true) or local (false)
-	 * @return The Timer that this DataEntry describes. null will be returned if there was a missing or invalid key/value pair
+	 * @return The LocalTimer that this DataEntry describes. null will be returned if there was a missing or invalid key/value pair
 	 */
-	public final Timer getTimer(boolean global) {
+	public final LocalTimer getLocalTimer() {
+		Timer timer = getTimer();
+		return (timer instanceof GlobalTimer ? ((GlobalTimer) timer).toLocalTimer() : (LocalTimer) timer);
+	}
+	
+	/**
+	 * This DataEntry must contain the key/value pairs for the {@link Key#DURATION} key,
+	 * and either the {@link Key#EXPIRE} key or the {@link Key#ELAPSED} key.
+	 * @return The GlobalTimer that this DataEntry describes. null will be returned if there was a missing or invalid key/value pair
+	 */
+	public final GlobalTimer getGlobalTimer() {
+		Timer timer = getTimer();
+		return (timer instanceof LocalTimer ? ((LocalTimer) timer).toGlobalTimer() : (GlobalTimer) timer);
+	}
+	
+	/**
+	 * This DataEntry must contain the key/value pairs for the {@link Key#DURATION} key,
+	 * and either the {@link Key#EXPIRE} key or the {@link Key#ELAPSED} key.
+	 * @return The GlobalTimer or LocalTimer that this DataEntry describes.
+	 * null will be returned if there was a missing or invalid key/value pair
+	 */
+	public Timer getTimer() {
 		Number duration = getNumber(Key.DURATION);
 		if (duration != null && duration.longValue() > 0) {
 			Number expire = getNumber(Key.EXPIRE);
 			Number elapsed = getNumber(Key.ELAPSED);
 			if (expire != null && expire.longValue() > 0) {
-				GlobalTimer globalTimer = new GlobalTimer(duration.longValue(), expire.longValue());
-				if (!global) {
-					return globalTimer.toLocalTimer();
-				}
-				return globalTimer;
+				return new GlobalTimer(duration.longValue(), expire.longValue());
 			} else if (elapsed != null && elapsed.longValue() >= 0) {
-				LocalTimer localTimer = new LocalTimer(duration.longValue(), elapsed.longValue());
-				if (global) {
-					return localTimer.toGlobalTimer();
-				}
-				return localTimer;
+				return new LocalTimer(duration.longValue(), elapsed.longValue());
 			}
 		}
 		return null;
