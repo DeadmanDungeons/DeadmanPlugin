@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.deadmandungeons</groupId>
 	<artifactId>deadman-plugin</artifactId>
-	<version>1.7.4</version>
+	<version>1.8.0</version>
 	<name>DeadmanPlugin</name>
 	
 	<build>
