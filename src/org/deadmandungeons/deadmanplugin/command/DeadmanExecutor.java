@@ -134,13 +134,13 @@ public class DeadmanExecutor implements CommandExecutor {
 	@Override
 	public final boolean onCommand(CommandSender sender, org.bukkit.command.Command bukkitCmd, String label, String[] args) {
 		if (args.length == 0) {
-			messenger.sendPluginInfo(bukkitCmd, sender);
+			messenger.sendPluginInfo(sender, bukkitCmd);
 			return true;
 		}
 		if (args[0].equals("?") || args[0].equalsIgnoreCase("help")) {
 			if (args.length == 2) {
 				if (DeadmanUtils.isNumeric(args[1])) {
-					messenger.sendHelpInfo(bukkitCmd, sender, commands, Integer.parseInt(args[1]));
+					messenger.sendHelpInfo(sender, bukkitCmd, commands.values(), Integer.parseInt(args[1]));
 					return true;
 				} else {
 					String helpInfoPath = helpInfo.get(args[1].toLowerCase());
@@ -150,7 +150,7 @@ public class DeadmanExecutor implements CommandExecutor {
 					}
 				}
 			} else {
-				messenger.sendHelpInfo(bukkitCmd, sender, commands, 1);
+				messenger.sendHelpInfo(sender, bukkitCmd, commands.values(), 1);
 				return true;
 			}
 		}
@@ -194,7 +194,7 @@ public class DeadmanExecutor implements CommandExecutor {
 		}
 		
 		if (args[args.length - 1].equals("?") || args[args.length - 1].equals("help")) {
-			messenger.sendCommandInfo(bukkitCmd, cmdWrapper.info, sender);
+			messenger.sendCommandInfo(sender, bukkitCmd, cmdWrapper.info);
 			return true;
 		}
 		
@@ -202,7 +202,7 @@ public class DeadmanExecutor implements CommandExecutor {
 		SubCommand subCmd = Arguments.matcher(this).forCommand(cmdWrapper).withStringArgs(params).findMatch();
 		if (subCmd == null) {
 			messenger.sendMessage(sender, "failed.invalid-args-alt");
-			messenger.sendCommandUsage(bukkitCmd, cmdWrapper.info, sender);
+			messenger.sendCommandUsage(sender, bukkitCmd, cmdWrapper.info);
 			return false;
 		}
 		if (subCmd.info() != null) {

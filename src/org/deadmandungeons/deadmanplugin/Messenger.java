@@ -2,7 +2,10 @@ package org.deadmandungeons.deadmanplugin;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -167,99 +170,141 @@ public class Messenger {
 	}
 	
 	/**
-	 * @param info - The CommandInfo that should be sent as the Command name, usage, and description
+	 * <b>Note:</b> If the CommandSender does not have any of the permissions specified by the given cmdInfo,
+	 * or any of its sub-commands, this will do nothing.
 	 * @param sender - The Command Sender to send the command info to
+	 * @param bukkitCmd - The Bukkit Command used as the base command prefix for the given cmdInfo
+	 * @param cmdInfo - The CommandInfo that should be sent as the Command name, usage, and description
 	 */
-	public void sendCommandInfo(Command bukkitCmd, CommandInfo info, CommandSender sender) {
-		sender.sendMessage(getPrimaryColor() + info.name() + " Command");
-		sendCommandUsage(bukkitCmd, info, sender);
+	public void sendCommandInfo(CommandSender sender, Command bukkitCmd, CommandInfo cmdInfo) {
+		List<Integer> permittedSubCmdIndexes = getPermittedSubCmdIndexes(sender, cmdInfo);
+		if (permittedSubCmdIndexes == null) {
+			return;
+		}
+		
+		sender.sendMessage(getPrimaryColor() + cmdInfo.name() + " Command");
+		sendPermittedCommandUsage(sender, bukkitCmd.getName(), cmdInfo, permittedSubCmdIndexes);
 	}
 	
 	/**
-	 * @param info - The CommandInfo that should be sent as the Command usage and description
-	 * @param sender - The Command Sender to send the command info to
+	 * <b>Note:</b> If the CommandSender does not have any of the permissions specified by the given cmdInfo,
+	 * or any of its sub-commands, this will do nothing.
+	 * @param sender - The CommandSender to send the command usage to
+	 * @param bukkitCmd - The Bukkit Command used as the base command prefix for the given cmdInfo
+	 * @param cmdInfo - The CommandInfo that should be sent as the Command usage and description
 	 */
-	public void sendCommandUsage(Command bukkitCmd, CommandInfo info, CommandSender sender) {
-		if (info.aliases().length > 0) {
-			sender.sendMessage(getTertiaryColor() + "  ALIASES: " + StringUtils.join(info.aliases(), ", "));
+	public void sendCommandUsage(CommandSender sender, Command bukkitCmd, CommandInfo cmdInfo) {
+		List<Integer> permittedSubCmdIndexes = getPermittedSubCmdIndexes(sender, cmdInfo);
+		if (permittedSubCmdIndexes == null) {
+			return;
 		}
-		String baseCmd = getSecondaryColor() + "  /" + bukkitCmd.getName() + " " + info.name().toLowerCase();
-		SubCommandInfo[] commands = info.subCommands();
-		if (commands.length == 0) {
-			sender.sendMessage(baseCmd);
-		}
-		if (info.description() != null && !info.description().trim().isEmpty()) {
-			sender.sendMessage(getTertiaryColor() + "  - " + info.description());
-		}
-		for (SubCommandInfo cmdInfo : commands) {
-			if (DeadmanExecutor.hasCommandPerm(sender, cmdInfo.permissions())) {
-				String arguments = "";
-				for (int i = 0; i < cmdInfo.arguments().length; i++) {
-					ArgumentInfo argInfo = cmdInfo.arguments()[i];
-					arguments += (i > 0 ? " " : "") + String.format(argInfo.argType().getWrap(), argInfo.argName());
-				}
-				sender.sendMessage(baseCmd + " " + arguments);
-				if (cmdInfo.description() != null && !cmdInfo.description().trim().isEmpty()) {
-					sender.sendMessage(getTertiaryColor() + "    - " + cmdInfo.description());
-				}
-			}
-		}
+		
+		sendPermittedCommandUsage(sender, bukkitCmd.getName(), cmdInfo, permittedSubCmdIndexes);
 	}
 	
-	// TODO calculate pages based on the amount of subcommands rather than full commands to make more evenly distributed
 	/**
-	 * Only commands that the CommandSender has permissions for will be displayed. 5 commands
-	 * are displayed per page.
+	 * Only commands and sub-commands that the CommandSender has permissions for will be displayed.
 	 * @param sender - The CommandSender to send the command help page to
-	 * @param commandMap - A Map containing all of the registered commands to be sent to the CommandSender
-	 * @param pageNum - The number of the page to send. Each page lists 5 commands
+	 * @param bukkitCmd - The Bukkit Command used as the base command prefix for the given commands
+	 * @param commands - A Collection containing all of the registered commands to be used in the sent help info
+	 * @param pageNum - The number of the page to send. Each page lists at least 10 command parts.
+	 * A command part is the base command info, and any sub-command info
 	 */
-	public void sendHelpInfo(Command bukkitCmd, CommandSender sender, Map<Class<?>, CommandWrapper<?>> commandMap, int pageNum) {
-		List<CommandInfo> cmdInfos = new ArrayList<CommandInfo>();
-		for (CommandWrapper<?> cmdWrapper : commandMap.values()) {
-			if (DeadmanExecutor.hasCommandPerm(sender, cmdWrapper.getInfo().permissions())) {
-				// Check permisisons at SubCommand scope as well.
-				SubCommandInfo[] subCmds = cmdWrapper.getInfo().subCommands();
-				if (subCmds.length > 0) {
-					for (SubCommandInfo subCmdInfo : subCmds) {
-						if (DeadmanExecutor.hasCommandPerm(sender, subCmdInfo.permissions())) {
-							cmdInfos.add(cmdWrapper.getInfo());
-							break;
-						}
+	public void sendHelpInfo(CommandSender sender, Command bukkitCmd, Collection<CommandWrapper<?>> commands, int pageNum) {
+		Map<CommandInfo, List<Integer>> pageCmds = new LinkedHashMap<>();
+		int cmdPartsPerPage = 10, pageCmdParts = 0, page = 1, maxPage = 1;
+		for (CommandWrapper<?> cmdWrapper : commands) {
+			CommandInfo cmdInfo = cmdWrapper.getInfo();
+			List<Integer> permittedSubCmdIndexes = getPermittedSubCmdIndexes(sender, cmdInfo);
+			if (permittedSubCmdIndexes != null) {
+				if (maxPage <= pageNum) {
+					// If we are on a new page (and there are more cmdParts), clear the previous page
+					if (pageCmdParts == 0 && maxPage > 1) {
+						pageCmds.clear();
 					}
-				} else {
-					cmdInfos.add(cmdWrapper.getInfo());
+					pageCmds.put(cmdInfo, permittedSubCmdIndexes);
+				}
+				
+				// Add 1 for each sub command info and 1 for the base command info
+				pageCmdParts += permittedSubCmdIndexes.size() + 1;
+				
+				if (pageCmdParts >= cmdPartsPerPage) {
+					pageCmdParts = 0;
+					maxPage++;
+					if (page < pageNum) {
+						page++;
+					}
 				}
 			}
 		}
-		CommandInfo[] infos = cmdInfos.toArray(new CommandInfo[cmdInfos.size()]);
 		
-		int maxPage = infos.length / 5 + (infos.length % 5 > 0 ? 1 : 0);
-		if (pageNum * 5 > infos.length + 4) {
-			pageNum = maxPage;
-		}
-		
-		String paging = (infos.length > 5 ? " [pg. " + pageNum + "/" + maxPage + "]" : "");
+		String paging = (maxPage > 1 ? " [pg. " + page + "/" + maxPage + "]" : "");
 		String helpTitle = getPrimaryColor() + plugin.getName() + " Commands" + paging + getTertiaryColor();
 		sender.sendMessage("");
 		sender.sendMessage(getTertiaryColor() + "<========= " + helpTitle + " =========>");
 		sender.sendMessage(getSecondaryColor() + "KEY: " + getTertiaryColor() + "'non-variable' '<variable>' '[optional-variable]'");
-		for (int i = 0; i < infos.length && i < (pageNum * 5); i++) {
-			if (i >= (pageNum - 1) * 5) {
-				sendCommandInfo(bukkitCmd, infos[i], sender);
-				if (i + 1 != infos.length && i + 1 != pageNum * 5) {
-					sender.sendMessage("");
-				}
+		
+		Iterator<Map.Entry<CommandInfo, List<Integer>>> iter = pageCmds.entrySet().iterator();
+		while (iter.hasNext()) {
+			Map.Entry<CommandInfo, List<Integer>> entry = iter.next();
+			sender.sendMessage(getPrimaryColor() + entry.getKey().name() + " Command");
+			sendPermittedCommandUsage(sender, bukkitCmd.getName(), entry.getKey(), entry.getValue());
+			
+			if (iter.hasNext()) {
+				sender.sendMessage("");
 			}
 		}
+		
 		sender.sendMessage(getTertiaryColor() + "<==================================================>");
 		sender.sendMessage("");
+	}
+	
+	private List<Integer> getPermittedSubCmdIndexes(CommandSender sender, CommandInfo cmdInfo) {
+		if (!DeadmanExecutor.hasCommandPerm(sender, cmdInfo.permissions())) {
+			return null;
+		}
+		if (cmdInfo.subCommands().length == 0) {
+			return Collections.emptyList();
+		}
+		List<Integer> permittedSubCmdIndexes = new ArrayList<>();
+		for (int i = 0; i < cmdInfo.subCommands().length; i++) {
+			SubCommandInfo subCmdInfo = cmdInfo.subCommands()[i];
+			if (DeadmanExecutor.hasCommandPerm(sender, subCmdInfo.permissions())) {
+				permittedSubCmdIndexes.add(i);
+			}
+		}
+		return (!permittedSubCmdIndexes.isEmpty() ? permittedSubCmdIndexes : null);
+	}
+	
+	private void sendPermittedCommandUsage(CommandSender sender, String cmdName, CommandInfo cmdInfo, List<Integer> subCmdIndexes) {
+		if (cmdInfo.aliases().length > 0) {
+			sender.sendMessage(getTertiaryColor() + "  ALIASES: " + StringUtils.join(cmdInfo.aliases(), ", "));
+		}
+		String baseCmd = getSecondaryColor() + "  /" + cmdName + " " + cmdInfo.name().toLowerCase();
+		if (subCmdIndexes.isEmpty()) {
+			sender.sendMessage(baseCmd);
+		}
+		if (cmdInfo.description() != null && !cmdInfo.description().trim().isEmpty()) {
+			sender.sendMessage(getTertiaryColor() + "  - " + cmdInfo.description());
+		}
+		for (Integer subCmdIndex : subCmdIndexes) {
+			SubCommandInfo subCmdInfo = cmdInfo.subCommands()[subCmdIndex];
+			String arguments = "";
+			for (int i = 0; i < subCmdInfo.arguments().length; i++) {
+				ArgumentInfo argInfo = subCmdInfo.arguments()[i];
+				arguments += (i > 0 ? " " : "") + String.format(argInfo.argType().getWrap(), argInfo.argName());
+			}
+			sender.sendMessage(baseCmd + " " + arguments);
+			if (subCmdInfo.description() != null && !subCmdInfo.description().trim().isEmpty()) {
+				sender.sendMessage(getTertiaryColor() + "    - " + subCmdInfo.description());
+			}
+		}
 	}
 	
 	/**
 	 * @param sender - The CommandSender to send this plugin's information to
 	 */
-	public void sendPluginInfo(Command bukkitCmd, CommandSender sender) {
+	public void sendPluginInfo(CommandSender sender, Command bukkitCmd) {
 		PluginDescriptionFile pdf = plugin.getDescription();
 		sender.sendMessage(getSecondaryColor() + pdf.getName() + " Version: " + getPrimaryColor() + pdf.getVersion());
 		String authors = formatList(pdf.getAuthors());
