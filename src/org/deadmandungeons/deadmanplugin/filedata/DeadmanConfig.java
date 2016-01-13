@@ -154,11 +154,17 @@ public class DeadmanConfig {
 			return value;
 		}
 		
+		public V defaultValue() {
+			@SuppressWarnings("unchecked")
+			V defaultValue = (V) getEntryValue().defaultValue;
+			return defaultValue;
+		}
+		
 		/**
 		 * @return true if the value as returned by {@link #value()} is the default configuration value and false otherwise
 		 */
-		public boolean isDefault() {
-			return getEntryValue().defaultValue;
+		public boolean isValueDefault() {
+			return getEntryValue().valueDefault;
 		}
 		
 		protected EntryValue getEntryValue() {
@@ -189,22 +195,28 @@ public class DeadmanConfig {
 		
 		@Override
 		protected EntryValue loadValue(DeadmanPlugin plugin) {
-			T value = null;
-			boolean defaultValue = false;
 			Object val = plugin.getConfig().get(path);
-			if (val != null) {
-				if (!plugin.getConfig().isSet(path)) {
-					plugin.getLogger().severe(String.format(MISSING_VALUE, type.getName(), path, val));
-					defaultValue = true;
-				}
-				Converter<T> converter = getConverter(plugin, type);
-				value = converter.convert(val);
-				if (value == null) {
-					value = converter.convert(plugin.getConfig().getDefaults().get(path));
+			if (val == null) {
+				return null;
+			}
+			Converter<T> converter = getConverter(plugin, type);
+			T defaultValue = converter.convert(plugin.getConfig().getDefaults().get(path));
+			if (defaultValue == null) {
+				return null;
+			}
+			
+			if (plugin.getConfig().isSet(path)) {
+				T value = converter.convert(val);
+				if (value != null) {
+					return new EntryValue(value, defaultValue, false);
+				} else {
 					plugin.getLogger().severe(String.format(INVALID_VALUE, type.getName(), path, val));
 				}
+			} else {
+				plugin.getLogger().severe(String.format(MISSING_VALUE, type.getName(), path, val));
+				
 			}
-			return (value != null ? new EntryValue(value, defaultValue) : null);
+			return new EntryValue(defaultValue, defaultValue, true);
 		}
 		
 	}
@@ -217,22 +229,28 @@ public class DeadmanConfig {
 		
 		@Override
 		protected EntryValue loadValue(DeadmanPlugin plugin) {
-			List<T> valueList = null;
-			boolean defaultValue = false;
-			List<?> vals = plugin.getConfig().getList(path);
-			if (vals != null) {
-				if (!plugin.getConfig().isSet(path)) {
-					plugin.getLogger().severe(String.format(MISSING_VALUE, type.getName() + " List", path, Arrays.toString(vals.toArray())));
-					defaultValue = true;
-				}
-				Converter<T> converter = getConverter(plugin, type);
-				valueList = convertList(converter, vals);
-				if (valueList == null) {
-					valueList = convertList(converter, plugin.getConfig().getDefaults().getList(path));
-					plugin.getLogger().severe(String.format(INVALID_VALUE, type.getName(), path, Arrays.toString(vals.toArray())));
-				}
+			List<?> val = plugin.getConfig().getList(path);
+			if (val == null) {
+				return null;
 			}
-			return (valueList != null ? new EntryValue(valueList, defaultValue) : null);
+			Converter<T> converter = getConverter(plugin, type);
+			List<T> defaultValue = convertList(converter, plugin.getConfig().getDefaults().getList(path));
+			if (defaultValue == null) {
+				return null;
+			}
+			
+			if (plugin.getConfig().isSet(path)) {
+				List<T> value = convertList(converter, val);
+				if (value != null) {
+					return new EntryValue(value, defaultValue, false);
+				} else {
+					plugin.getLogger().severe(String.format(INVALID_VALUE, type.getName(), path, Arrays.toString(val.toArray())));
+				}
+			} else {
+				plugin.getLogger().severe(String.format(MISSING_VALUE, type.getName() + " List", path, Arrays.toString(val.toArray())));
+				
+			}
+			return new EntryValue(defaultValue, defaultValue, true);
 		}
 		
 		private List<T> convertList(Converter<T> converter, List<?> vals) {
@@ -260,26 +278,30 @@ public class DeadmanConfig {
 		
 		@Override
 		protected EntryValue loadValue(DeadmanPlugin plugin) {
-			Map<String, T> valueMap = null;
-			boolean defaultValue = false;
 			ConfigurationSection section = plugin.getConfig().getConfigurationSection(path);
-			if (section != null) {
-				Map<String, ?> vals = section.getValues(false);
-				if (!plugin.getConfig().isSet(path)) {
-					plugin.getLogger().severe(String.format(MISSING_VALUE, type.getName() + " List", path, vals.toString()));
-					defaultValue = true;
-				}
-				Converter<T> converter = getConverter(plugin, type);
-				valueMap = convertMap(converter, vals);
-				if (valueMap == null) {
-					ConfigurationSection defaultSection = plugin.getConfig().getDefaults().getConfigurationSection(path);
-					if (defaultSection != null) {
-						valueMap = convertMap(converter, defaultSection.getValues(false));
-						plugin.getLogger().severe(String.format(INVALID_VALUE, type.getName(), path, vals.toString()));
-					}
-				}
+			Map<String, ?> val = (section != null ? section.getValues(false) : null);
+			if (val == null) {
+				return null;
 			}
-			return (valueMap != null ? new EntryValue(valueMap, defaultValue) : null);
+			Converter<T> converter = getConverter(plugin, type);
+			section = plugin.getConfig().getDefaults().getConfigurationSection(path);
+			Map<String, T> defaultValue = convertMap(converter, section.getValues(false));
+			if (defaultValue == null) {
+				return null;
+			}
+			
+			if (plugin.getConfig().isSet(path)) {
+				Map<String, T> value = convertMap(converter, val);
+				if (value != null) {
+					return new EntryValue(value, defaultValue, false);
+				} else {
+					plugin.getLogger().severe(String.format(INVALID_VALUE, type.getName(), path, val.toString()));
+				}
+			} else {
+				plugin.getLogger().severe(String.format(MISSING_VALUE, type.getName() + " Map", path, val.toString()));
+				
+			}
+			return new EntryValue(defaultValue, defaultValue, true);
 		}
 		
 		private Map<String, T> convertMap(Converter<T> converter, Map<String, ?> vals) {
@@ -305,11 +327,13 @@ public class DeadmanConfig {
 	private static class EntryValue {
 		
 		private final Object value;
-		private final boolean defaultValue;
+		private final Object defaultValue;
+		private final boolean valueDefault;
 		
-		private EntryValue(Object value, boolean defaultValue) {
+		private EntryValue(Object value, Object defaultValue, boolean valueDefault) {
 			this.value = value;
 			this.defaultValue = defaultValue;
+			this.valueDefault = valueDefault;
 		}
 		
 	}
