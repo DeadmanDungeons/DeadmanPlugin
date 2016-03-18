@@ -15,7 +15,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
 import org.bukkit.material.MaterialData;
 import org.deadmandungeons.deadmanplugin.DeadmanUtils;
-import org.deadmandungeons.deadmanplugin.PlayerID;
+import org.deadmandungeons.deadmanplugin.PlayerId;
 import org.deadmandungeons.deadmanplugin.WorldCoord;
 import org.deadmandungeons.deadmanplugin.timer.GlobalTimer;
 import org.deadmandungeons.deadmanplugin.timer.LocalTimer;
@@ -102,7 +102,7 @@ public class DataEntry implements Cloneable {
 		private Location location;
 		private MaterialData materialData;
 		private Timer timer;
-		private PlayerID playerId;
+		private PlayerId playerId;
 		
 		protected abstract T self();
 		
@@ -162,18 +162,18 @@ public class DataEntry implements Cloneable {
 		}
 		
 		/**
-		 * @deprecated for {@link #playerID(PlayerID)}
+		 * @deprecated for {@link #playerID(PlayerId)}
 		 */
 		@Deprecated
-		public final T withPlayerID(PlayerID playerId) {
-			return playerID(playerId);
+		public final T withPlayerId(PlayerId playerId) {
+			return playerId(playerId);
 		}
 		
 		/**
-		 * @param playerId - The PlayerID to set in the built DataEntry
+		 * @param playerId - The PlayerId to set in the built DataEntry
 		 * @return this builder
 		 */
-		public final T playerID(PlayerID playerId) {
+		public final T playerId(PlayerId playerId) {
 			this.playerId = playerId;
 			return self();
 		}
@@ -224,7 +224,7 @@ public class DataEntry implements Cloneable {
 			setTimer(builder.timer);
 		}
 		if (builder.playerId != null) {
-			setPlayerID(builder.playerId);
+			setPlayerId(builder.playerId);
 		}
 	}
 	
@@ -552,29 +552,37 @@ public class DataEntry implements Cloneable {
 	}
 	
 	/**
-	 * @return the {@link PlayerID} that this DataEntry describes with keys {@link Key#UUID} and {@link Key#USERNAME}.
+	 * @return the {@link PlayerId} that this DataEntry describes with keys {@link Key#UUID} and {@link Key#USERNAME}.
 	 * null will be returned is there was a missing or invalid key/value pair
 	 */
-	public PlayerID getPlayerID() {
+	public PlayerId getPlayerId() {
 		Object uuid = getValue(Key.UUID);
 		Object usermane = getValue(Key.USERNAME);
 		if (uuid != null && DeadmanUtils.isUUID(uuid.toString()) && usermane != null) {
-			return new PlayerID(UUID.fromString(uuid.toString()), usermane.toString());
+			return new PlayerId(UUID.fromString(uuid.toString()), usermane.toString());
 		}
 		return null;
 	}
 	
 	/**
-	 * @param playerId - The {@link PlayerID} to set and be represented by the {@link Key#UUID} and {@link Key#USERNAME} keys.
+	 * @param playerId - The {@link PlayerId} to set and be represented by the {@link Key#UUID} and {@link Key#USERNAME} keys.
 	 */
-	public void setPlayerID(PlayerID playerId) {
+	public void setPlayerId(PlayerId playerId) {
 		if (playerId != null) {
-			setValue(Key.UUID, playerId.getUUID().toString());
+			setValue(Key.UUID, playerId.getId().toString());
 			setValue(Key.USERNAME, playerId.getUsername().toLowerCase());
 		} else {
 			setValue(Key.UUID, null);
 			setValue(Key.USERNAME, null);
 		}
+	}
+	
+	/**
+	 * @param playerId - The {@link PlayerId} to be formatted;
+	 * @return the formatted String representation of the given PlayerId with the {@link Key#UUID} and {@link Key#USERNAME} keys.
+	 */
+	public static String formatPlayerId(PlayerId playerId) {
+		return format(ImmutableMap.<Enum<?>, Object> of(Key.UUID, playerId.getId(), Key.USERNAME, playerId.getUsername()));
 	}
 	
 	
@@ -659,7 +667,7 @@ public class DataEntry implements Cloneable {
 		EXPIRE,
 		ELAPSED,
 		
-		/* PlayerID related keys */
+		/* PlayerId related keys */
 		UUID,
 		USERNAME;
 	}
