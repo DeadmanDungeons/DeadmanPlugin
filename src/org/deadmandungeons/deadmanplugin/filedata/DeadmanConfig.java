@@ -1,9 +1,13 @@
 package org.deadmandungeons.deadmanplugin.filedata;
 
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.bukkit.configuration.ConfigurationSection;
 import org.deadmandungeons.deadmanplugin.Conversion.Converter;
@@ -17,7 +21,7 @@ import com.google.common.collect.ImmutableMap;
  * A configuration entry is represented as one of 3 implementations of {@link BaseConfigEntry}.
  * There are 3 methods that can be used to create a new ConfigEntry instance for each ConfigEntry implementation;
  * {@link #entry(Class, String)} for single value types, {@link #listEntry(Class, String)} for list value types,
- * and {@link #mapEntry(Class, String)} for map value types. Each ConfigEntry implementation has a
+ * and {@link #mapEntry(Class, String)} for map value types. Each BaseConfigEntry implementation has a
  * {@link BaseConfigEntry#value()} method that returns the appropriate value for the specific value type.<br>
  * <b>Example:</b>
  * <code><pre>
@@ -26,7 +30,7 @@ import com.google.common.collect.ImmutableMap;
  * </pre></code>
  * The {@link #loadValues()} method should be used to load (or reload) the values from file.<br>
  * <b>NOTE:</b> A Converter will need to be registered for config values that are of a type other than String, Integer,
- * Boolean, ChatColor, or ItemStack. Use {@link #registerConverter(Class, Converter)} to register a new Converter,
+ * Boolean, ChatColor, or ItemStack. Use {@link DeadmanPlugin#getConversion()} to register a new Converter,
  * or to override a default converter.
  * @author Jon
  */
@@ -34,15 +38,22 @@ public class DeadmanConfig {
 	
 	// All of the unchecked casts are guaranteed to be type safe.
 	
+	// Logger messages
 	private static final String MISSING_VALUE = "The %s config value at path '%s' is missing. Defaulting to value '%s'";
 	private static final String INVALID_VALUE = "The $s config value at path '%s' is invalid. Defaulting to value '%s'";
-	
+	private static final String NONUNIQUE_VALUE = "The values for the '%s' config entry group are not unique. "
+			+ "The default values will be used for this group";
+			
+	// Exception messages
 	private static final String MISSING_CONVERTER = "A Converter for config values of type '%s' is not registered! "
-			+ "use registerConverter(typeClass, converter) to register a config Converter for this type.";
-	private static final String FAILED_TO_LOAD = "A '%s' value for the config value at path '%s' in the default configuration file "
+			+ "use plugin.getConversion() to register a Converter for this type.";
+	private static final String FAILED_TO_LOAD = "A '%s' value for the config entry at path '%s' in the default configuration file "
 			+ "was either missing or invalid! The default configuration must contain valid values.";
+	private static final String FAILED_TO_LOAD_GROUP = "The values for the '%s' config entry group in the default configuration file"
+			+ "are not unique! The default configuraiton must contain unique values among config entry groups";
 			
 	private final Map<BaseConfigEntry<?, ?>, EntryValue> entryValues = new HashMap<>();
+	private final Map<String, GroupOptions> entryGroups = new HashMap<>();
 	
 	
 	/**
@@ -86,6 +97,20 @@ public class DeadmanConfig {
 	}
 	
 	/**
+	 * This will create and store a unique value list config entry for this DeadmanConfig instance.<br>
+	 * <b>Note:</b> This is the same as {@link #listEntry(Class, String)} except that the list elements
+	 * are stored in a {@link Set} which prevents duplicate elements and ensures uniqueness of values.
+	 * @param type - The type of the config entry value
+	 * @param path - The path to the list config entry
+	 * @return
+	 */
+	public <T> SetConfigEntry<T> setEntry(Class<T> type, String path) {
+		SetConfigEntry<T> entry = new SetConfigEntry<>(type, path);
+		entryValues.put(entry, null);
+		return entry;
+	}
+	
+	/**
 	 * This will create and store a value map config entry for this DeadmanConfig instance.<br>
 	 * Example map entry:
 	 * <code><pre>
@@ -106,16 +131,84 @@ public class DeadmanConfig {
 		return entry;
 	}
 	
+	/**
+	 * This will group together the given config entries of same type to ensure the
+	 * uniqueness of values between them when loading. If the loaded values of two
+	 * or more entries in the group are equal, all of the entries in the group will
+	 * be loaded with the default values and a message will be printed to console.<br>
+	 * A single config entry can be grouped more than once.
+	 * @param groupName - The name of the group which can be anything
+	 * @param entries - The Collection of config entries with same type to group together
+	 * @return the GroupOptions which can optionally be used to configure how the created
+	 * group should be handled
+	 * @throws IllegalArgumentException if the given groupName or entries is null.<br>
+	 * Or if the given entries collection contains less than 2 entries.<br>
+	 * Or if any of the entries in the given collection are unknown and do not belong to this DeadmanConfig instance.
+	 */
+	public <T, V, E extends BaseConfigEntry<T, V>> GroupOptions groupEntries(String groupName, Collection<E> entries)
+			throws IllegalArgumentException {
+		if (groupName == null || entries == null) {
+			throw new IllegalArgumentException("groupName or entries cannot be null");
+		}
+		if (entries.size() < 2) {
+			throw new IllegalArgumentException("entries must contain at least 2 entries");
+		}
+		Set<BaseConfigEntry<?, ?>> group = new HashSet<>();
+		for (E entry : entries) {
+			if (!entryValues.containsKey(entry)) {
+				throw new IllegalArgumentException("entries contains unknown config entry instance: " + entry);
+			}
+			group.add(entry);
+		}
+		
+		for (E entry : entries) {
+			entry.groups.add(groupName);
+		}
+		GroupOptions options = new GroupOptions();
+		entryGroups.put(groupName, options);
+		return options;
+	}
+	
+	
 	// TODO maybe restrict access to this method to only be used by DeadmanPlugin class
-	public void loadEntries(DeadmanPlugin plugin) {
+	public void loadEntries(DeadmanPlugin plugin) throws IllegalStateException {
+		// First initialize validator for testing the uniqueness of loaded group values
+		GroupValidator groupValidator = new GroupValidator();
+		
+		// Then load the config entries and validate the default configurations and the uniqueness of group values
+		Set<String> defaultedGroups = new HashSet<>();
+		Map<BaseConfigEntry<?, ?>, EntryValue> loadedValues = new HashMap<>();
 		for (Map.Entry<BaseConfigEntry<?, ?>, EntryValue> mapEntry : entryValues.entrySet()) {
 			BaseConfigEntry<?, ?> entry = mapEntry.getKey();
 			EntryValue entryValue = entry.loadValue(plugin);
-			if (entryValue != null) {
-				mapEntry.setValue(entryValue);
-			} else {
+			// Check if the default configuration contains a missing or invalid value
+			if (entryValue == null) {
 				throw new IllegalStateException(String.format(FAILED_TO_LOAD, entry.getType().getName(), entry.getPath()));
 			}
+			
+			for (String groupName : entry.groups) {
+				// Check if the value of the grouped entry is not unique to other values in the group
+				if (!defaultedGroups.contains(groupName) && !groupValidator.validateValue(groupName, entryValue.value)) {
+					defaultedGroups.add(groupName);
+					plugin.getLogger().warning(String.format(NONUNIQUE_VALUE, groupName));
+				}
+				// Check if the values or grouped entries in default configuration are not unique
+				if (!groupValidator.validateDefaultValue(groupName, entryValue.defaultValue)) {
+					throw new IllegalStateException(String.format(FAILED_TO_LOAD_GROUP, groupName));
+				}
+			}
+			loadedValues.put(entry, entryValue);
+		}
+		
+		// Then set the loaded config entry values
+		for (Map.Entry<BaseConfigEntry<?, ?>, EntryValue> mapEntry : entryValues.entrySet()) {
+			BaseConfigEntry<?, ?> entry = mapEntry.getKey();
+			EntryValue entryValue = mapEntry.getValue();
+			// Check if this config entry is apart of a group that was defaulted and update the entry value accordingly
+			if (!entryValue.valueDefault && !Collections.disjoint(entry.groups, defaultedGroups)) {
+				entryValue = new EntryValue(entryValue.defaultValue, entryValue.defaultValue, true);
+			}
+			mapEntry.setValue(entryValue);
 		}
 	}
 	
@@ -125,6 +218,7 @@ public class DeadmanConfig {
 		// This class object is what ensures the type safety of all casts in DeadmanConfig
 		protected final Class<T> type;
 		protected final String path;
+		protected final Set<String> groups = new HashSet<>();
 		
 		private BaseConfigEntry(Class<T> type, String path) {
 			this.type = type;
@@ -165,6 +259,11 @@ public class DeadmanConfig {
 		 */
 		public boolean isValueDefault() {
 			return getEntryValue().valueDefault;
+		}
+		
+		@Override
+		public String toString() {
+			return getClass().getSimpleName() + "[" + path + ": " + type.getName() + "]";
 		}
 		
 		protected EntryValue getEntryValue() {
@@ -210,10 +309,10 @@ public class DeadmanConfig {
 				if (value != null) {
 					return new EntryValue(value, defaultValue, false);
 				} else {
-					plugin.getLogger().severe(String.format(INVALID_VALUE, type.getName(), path, val));
+					plugin.getLogger().warning(String.format(INVALID_VALUE, type.getName(), path, val));
 				}
 			} else {
-				plugin.getLogger().severe(String.format(MISSING_VALUE, type.getName(), path, val));
+				plugin.getLogger().warning(String.format(MISSING_VALUE, type.getName(), path, val));
 				
 			}
 			return new EntryValue(defaultValue, defaultValue, true);
@@ -244,10 +343,10 @@ public class DeadmanConfig {
 				if (value != null) {
 					return new EntryValue(value, defaultValue, false);
 				} else {
-					plugin.getLogger().severe(String.format(INVALID_VALUE, type.getName(), path, Arrays.toString(val.toArray())));
+					plugin.getLogger().warning(String.format(INVALID_VALUE, type.getName(), path, Arrays.toString(val.toArray())));
 				}
 			} else {
-				plugin.getLogger().severe(String.format(MISSING_VALUE, type.getName() + " List", path, Arrays.toString(val.toArray())));
+				plugin.getLogger().warning(String.format(MISSING_VALUE, type.getName() + " List", path, Arrays.toString(val.toArray())));
 				
 			}
 			return new EntryValue(defaultValue, defaultValue, true);
@@ -266,6 +365,32 @@ public class DeadmanConfig {
 				listBuilder.add(value);
 			}
 			return listBuilder.build();
+		}
+		
+	}
+	
+	public class SetConfigEntry<T> extends BaseConfigEntry<T, Set<T>> {
+		
+		private final ListConfigEntry<T> listEntry;
+		
+		private SetConfigEntry(Class<T> type, String path) {
+			super(type, path);
+			listEntry = new ListConfigEntry<>(type, path);
+		}
+		
+		@Override
+		protected EntryValue loadValue(DeadmanPlugin plugin) {
+			EntryValue entryValue = listEntry.loadValue(plugin);
+			@SuppressWarnings("unchecked")
+			List<T> list = (List<T>) entryValue.value;
+			Set<T> set = new HashSet<>(list);
+			Set<T> defaultSet = set;
+			if (!entryValue.valueDefault) {
+				@SuppressWarnings("unchecked")
+				List<T> defaultList = (List<T>) entryValue.defaultValue;
+				defaultSet = new HashSet<>(defaultList);
+			}
+			return new EntryValue(set, defaultSet, entryValue.valueDefault);
 		}
 		
 	}
@@ -295,10 +420,10 @@ public class DeadmanConfig {
 				if (value != null) {
 					return new EntryValue(value, defaultValue, false);
 				} else {
-					plugin.getLogger().severe(String.format(INVALID_VALUE, type.getName(), path, val.toString()));
+					plugin.getLogger().warning(String.format(INVALID_VALUE, type.getName(), path, val.toString()));
 				}
 			} else {
-				plugin.getLogger().severe(String.format(MISSING_VALUE, type.getName() + " Map", path, val.toString()));
+				plugin.getLogger().warning(String.format(MISSING_VALUE, type.getName() + " Map", path, val.toString()));
 				
 			}
 			return new EntryValue(defaultValue, defaultValue, true);
@@ -323,6 +448,63 @@ public class DeadmanConfig {
 		
 	}
 	
+	
+	public static class GroupOptions {
+		
+		private boolean uniqueElements;
+		// More may be added
+		
+		/**
+		 * Invoke this to enable the uniqueElements validation.
+		 * If enabled, the corresponding entry group will validate uniqueness among the elements of entry values.
+		 * This only applies to Collection based config entries ({@link ListConfigEntry}, {@link SetConfigEntry}).
+		 * @return this GroupOptions instance
+		 */
+		public GroupOptions uniqueElements() {
+			uniqueElements = true;
+			return this;
+		}
+		
+	}
+	
+	private class GroupValidator {
+		
+		private final Map<String, Set<Object>> groupValues = new HashMap<>(entryGroups.size());
+		private final Map<String, Set<Object>> groupDefaultValues = new HashMap<>(entryGroups.size());
+		
+		private GroupValidator() {
+			for (String groupName : entryGroups.keySet()) {
+				groupValues.put(groupName, new HashSet<>());
+				groupDefaultValues.put(groupName, new HashSet<>());
+			}
+		}
+		
+		private boolean validateValue(String groupName, Object value) {
+			return validate(groupValues, groupName, value);
+		}
+		
+		private boolean validateDefaultValue(String groupName, Object defaultValue) {
+			return validate(groupDefaultValues, groupName, defaultValue);
+		}
+		
+		private boolean validate(Map<String, Set<Object>> groupValues, String groupName, Object value) {
+			Set<Object> values = groupValues.get(groupName);
+			boolean uniqueValue = values.add(value);
+			if (!uniqueValue) {
+				return false;
+			}
+			GroupOptions options = entryGroups.get(groupName);
+			if (options.uniqueElements && value instanceof Collection) {
+				for (Object val : values) {
+					if (!Collections.disjoint((Collection<?>) val, (Collection<?>) value)) {
+						return false;
+					}
+				}
+			}
+			return true;
+		}
+		
+	}
 	
 	private static class EntryValue {
 		
