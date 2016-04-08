@@ -24,10 +24,13 @@ import com.google.common.collect.ImmutableMap;
  * and {@link #mapEntry(Class, String)} for map value types. Each BaseConfigEntry implementation has a
  * {@link BaseConfigEntry#value()} method that returns the appropriate value for the specific value type.<br>
  * <b>Example:</b>
- * <code><pre>
+ * 
+ * <pre>
+ * 
  * ListConfigEntry&lt;String&gt; entry = config.listValueEntry(String.class, "path.to.entry");
  * List&lt;String&gt; value = entry.value();
- * </pre></code>
+ * </pre>
+ * 
  * The {@link #loadValues()} method should be used to load (or reload) the values from file.<br>
  * <b>NOTE:</b> A Converter will need to be registered for config values that are of a type other than String, Integer,
  * Boolean, ChatColor, or ItemStack. Use {@link DeadmanPlugin#getConversion()} to register a new Converter,
@@ -49,7 +52,7 @@ public class DeadmanConfig {
 			+ "use plugin.getConversion() to register a Converter for this type.";
 	private static final String FAILED_TO_LOAD = "A '%s' value for the config entry at path '%s' in the default configuration file "
 			+ "was either missing or invalid! The default configuration must contain valid values.";
-	private static final String FAILED_TO_LOAD_GROUP = "The values for the '%s' config entry group in the default configuration file"
+	private static final String FAILED_TO_LOAD_GROUP = "The values for the '%s' config entry group in the default configuration file "
 			+ "are not unique! The default configuraiton must contain unique values among config entry groups";
 			
 	private final Map<BaseConfigEntry<?, ?>, EntryValue> entryValues = new HashMap<>();
@@ -59,12 +62,18 @@ public class DeadmanConfig {
 	/**
 	 * This will create and store a single value config entry for this DeadmanConfig instance.<br>
 	 * Example entry:
-	 * <code><pre>
+	 * 
+	 * <pre>
 	 * path-to:
 	 *   entry: 'value'
-	 * </pre></code>
+	 * </pre>
+	 * 
 	 * Example usage for the above config example:
-	 * <code><pre>ConfigEntry&ltString&gt entry = entry(String.class, "path-to.entry");</pre></code><br>
+	 * 
+	 * <pre>
+	 * ConfigEntry&ltString&gt entry = entry(String.class, "path-to.entry");
+	 * </pre>
+	 * 
 	 * @param type - The type of the config entry value
 	 * @param path - The path to the single value config entry
 	 * @return a new ConfigEntry instance for a single value config entry
@@ -78,14 +87,20 @@ public class DeadmanConfig {
 	/**
 	 * This will create and store a value list config entry for this DeadmanConfig instance.<br>
 	 * Example list entry:
-	 * <code><pre>
+	 * 
+	 * <pre>
 	 * path-to:
 	 *   list-entry:
 	 *   - 'value'
 	 *   - 'another-value'
-	 * </pre></code>
+	 * </pre>
+	 * 
 	 * Example usage for the above config example:
-	 * <code><pre>ListConfigEntry&ltString&gt listEntry = listEntry(String.class, "path-to.list-entry");</pre></code><br>
+	 * 
+	 * <pre>
+	 * ListConfigEntry&ltString&gt listEntry = listEntry(String.class, "path-to.list-entry");
+	 * </pre>
+	 * 
 	 * @param type - The type of the config entry value
 	 * @param path - The path to the list config entry
 	 * @return a new ListConfigEntry instance for a value list config entry
@@ -113,14 +128,20 @@ public class DeadmanConfig {
 	/**
 	 * This will create and store a value map config entry for this DeadmanConfig instance.<br>
 	 * Example map entry:
-	 * <code><pre>
+	 * 
+	 * <pre>
 	 * path-to:
 	 *   map-entry:
 	 *     key1: 'value'
 	 *     key2: 'another-value'
-	 * </pre></code>
+	 * </pre>
+	 * 
 	 * Example usage for the above config example:
-	 * <code><pre>MapConfigEntry&ltString&gt mapEntry = mapEntry(String.class, "path-to.map-entry");</pre></code><br>
+	 * 
+	 * <pre>
+	 * MapConfigEntry&ltString&gt mapEntry = mapEntry(String.class, "path-to.map-entry");
+	 * </pre>
+	 * 
 	 * @param type - The type of the config entry value
 	 * @param path - The path to the map config entry
 	 * @return a new MapConfigEntry instance for a value map config entry
@@ -203,7 +224,7 @@ public class DeadmanConfig {
 		// Then set the loaded config entry values
 		for (Map.Entry<BaseConfigEntry<?, ?>, EntryValue> mapEntry : entryValues.entrySet()) {
 			BaseConfigEntry<?, ?> entry = mapEntry.getKey();
-			EntryValue entryValue = mapEntry.getValue();
+			EntryValue entryValue = loadedValues.get(entry);
 			// Check if this config entry is apart of a group that was defaulted and update the entry value accordingly
 			if (!entryValue.valueDefault && !Collections.disjoint(entry.groups, defaultedGroups)) {
 				entryValue = new EntryValue(entryValue.defaultValue, entryValue.defaultValue, true);
@@ -496,7 +517,7 @@ public class DeadmanConfig {
 			GroupOptions options = entryGroups.get(groupName);
 			if (options.uniqueElements && value instanceof Collection) {
 				for (Object val : values) {
-					if (!Collections.disjoint((Collection<?>) val, (Collection<?>) value)) {
+					if (val != value && !Collections.disjoint((Collection<?>) val, (Collection<?>) value)) {
 						return false;
 					}
 				}

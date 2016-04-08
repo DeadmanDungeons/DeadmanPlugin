@@ -145,7 +145,7 @@ public class Messenger {
 		sendMessage(sender, path, vars);
 		if (sender instanceof Player) {
 			Player player = (Player) sender;
-			player.playSound(player.getLocation(), Sound.NOTE_BASS_GUITAR, 1, .8F);
+			player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BASS, 1, .8F);
 		}
 	}
 	
@@ -158,12 +158,12 @@ public class Messenger {
 		sendMessage(sender, path, vars);
 		if (sender instanceof Player) {
 			final Player player = (Player) sender;
-			player.playSound(player.getLocation(), Sound.ORB_PICKUP, 1, .5F);
+			player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, .5F);
 			Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
 				
 				@Override
 				public void run() {
-					player.playSound(player.getLocation(), Sound.ORB_PICKUP, 1, .5F);
+					player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, .5F);
 				}
 			}, 4L);
 		}
