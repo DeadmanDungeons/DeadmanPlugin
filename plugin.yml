@@ -1,5 +1,5 @@
 name: DeadmanPlugin
-main: org.deadmandungeons.deadmanplugin.DeadmanCore
+main: com.deadmandungeons.deadmanplugin.DeadmanCore
 version: 1.8.1
 author: Weasel_Squeezer
 website: http://www.deadmandungeons.com
