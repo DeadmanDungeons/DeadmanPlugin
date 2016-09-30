@@ -199,9 +199,7 @@ public final class Arguments {
 				// if the amounts of arguments equal, or if there is only only 1 argument missing (for optional args)
 				if (args.length == arguments.length || args.length + 1 == arguments.length) {
 					for (int n = 0; n < arguments.length; n++) {
-						// if the amount of given arguments is greater than the current index
 						if (args.length > n) {
-							// if the argType is a NON_VARIABLE, and the given argument doesn't match the argName
 							if (arguments[n].argType() == ArgType.NON_VARIABLE && !arguments[n].argName().equalsIgnoreCase(args[n].toString())) {
 								matchedCmd = false;
 								break;
@@ -274,7 +272,6 @@ public final class Arguments {
 			if (info != null) {
 				if (strArgs != null) {
 					List<Object> args = new ArrayList<Object>();
-					Result<?> conversionResult = null;
 					
 					ArgumentInfo[] toArgs = info.arguments();
 					for (int i = 0; i < strArgs.length; i++) {
@@ -284,9 +281,9 @@ public final class Arguments {
 						}
 						ArgumentConverter<?> converter = executor.getConverter(toArgs[i].varType());
 						if (converter != null) {
-							conversionResult = converter.convertCommandArg(toArgs[i].argName(), strArgs[i]);
-							if (conversionResult.isError()) {
-								return new Result<Arguments>(conversionResult.getErrorMessage());
+							Result<?> conversionResult = converter.convertCommandArg(toArgs[i].argName(), strArgs[i]);
+							if (!conversionResult.isSuccess()) {
+								return Result.fail(conversionResult.getFailReason());
 							}
 							args.add(conversionResult.getResult());
 						} else if (toArgs[i].varType() == String.class) {
@@ -302,7 +299,7 @@ public final class Arguments {
 				}
 			}
 			
-			return new Result<Arguments>(new Arguments(this));
+			return Result.success(new Arguments(this));
 		}
 		
 		private static void validateArgs(ArgumentInfo[] arguments, Object[] givenArgs) {

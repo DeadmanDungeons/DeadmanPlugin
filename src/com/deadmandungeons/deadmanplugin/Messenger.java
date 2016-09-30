@@ -24,8 +24,8 @@ import org.bukkit.plugin.PluginDescriptionFile;
 import com.deadmandungeons.deadmanplugin.command.ArgumentInfo;
 import com.deadmandungeons.deadmanplugin.command.CommandInfo;
 import com.deadmandungeons.deadmanplugin.command.DeadmanExecutor;
-import com.deadmandungeons.deadmanplugin.command.SubCommandInfo;
 import com.deadmandungeons.deadmanplugin.command.DeadmanExecutor.CommandWrapper;
+import com.deadmandungeons.deadmanplugin.command.SubCommandInfo;
 import com.deadmandungeons.deadmanplugin.filedata.PluginFile;
 
 /**
@@ -243,7 +243,7 @@ public class Messenger {
 		String helpTitle = getPrimaryColor() + plugin.getName() + " Commands" + paging + getTertiaryColor();
 		sender.sendMessage("");
 		sender.sendMessage(getTertiaryColor() + "<========= " + helpTitle + " =========>");
-		sender.sendMessage(getSecondaryColor() + "KEY: " + getTertiaryColor() + "'non-variable' '<variable>' '[optional-variable]'");
+		sender.sendMessage(getSecondaryColor() + "KEY: " + getTertiaryColor() + "\"non-variable\", \"<variable>\", \"[optional-variable]\"");
 		
 		Iterator<Map.Entry<CommandInfo, List<Integer>>> iter = pageCmds.entrySet().iterator();
 		while (iter.hasNext()) {

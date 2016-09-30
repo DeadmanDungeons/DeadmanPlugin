@@ -8,13 +8,10 @@ import java.util.logging.Level;
 
 import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
-import org.bukkit.plugin.RegisteredServiceProvider;
+import org.bukkit.metadata.Metadatable;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import com.deadmandungeons.deadmanplugin.filedata.DeadmanConfig;
-
-import net.milkbowl.vault.economy.Economy;
-import net.milkbowl.vault.permission.Permission;
 
 /**
  * The base abstract class to be extended by the main class for all Deadman plugins.
@@ -28,8 +25,6 @@ public abstract class DeadmanPlugin extends JavaPlugin {
 	private static final Map<Class<? extends DeadmanPlugin>, DeadmanPlugin> plugins = new LinkedHashMap<>();
 	
 	private boolean loaded;
-	private Economy economy;
-	private Permission permissions;
 	private DeadmanConfig config;
 	
 	/**
@@ -133,44 +128,13 @@ public abstract class DeadmanPlugin extends JavaPlugin {
 		return loaded;
 	}
 	
-	public final boolean setupEconomy() {
-		if (economy == null) {
-			if (!getServer().getPluginManager().isPluginEnabled("Vault")) {
-				getLogger().severe("Vault is not enabled on this server and is a required dependendy!");
-				return false;
-			}
-			RegisteredServiceProvider<Economy> economyProvider = getServer().getServicesManager().getRegistration(Economy.class);
-			if (economyProvider != null) {
-				economy = economyProvider.getProvider();
-			}
-		}
-		return (economy != null);
-	}
-	
-	public final boolean setupPermissions() {
-		if (permissions == null) {
-			if (!getServer().getPluginManager().isPluginEnabled("Vault")) {
-				getLogger().severe("Vault is not enabled on this server and is a required dependendy!");
-				return false;
-			}
-			RegisteredServiceProvider<Permission> permissionProvider = getServer().getServicesManager().getRegistration(Permission.class);
-			if (permissionProvider != null) {
-				permissions = permissionProvider.getProvider();
-			}
-		}
-		return (permissions != null);
-	}
-	
-	public final Economy getEconomy() {
-		return economy;
-	}
-	
-	public final Permission getPermissions() {
-		return permissions;
-	}
 	
 	public final Conversion getConversion() {
 		return Conversion.get(getClass());
+	}
+	
+	public <T> T getMetadata(Metadatable metadatable, String key, Class<? extends T> type) {
+		return DeadmanUtils.getMetadata(this, metadatable, key, type);
 	}
 	
 	

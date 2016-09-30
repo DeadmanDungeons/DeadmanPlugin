@@ -135,7 +135,7 @@ public class DeadmanUtils {
 		}
 	}
 	
-	public static Block getTargetBlock(Player player, Integer range) {
+	public static Block getTargetBlock(Player player, int range) {
 		Block block = null;
 		BlockIterator iter = new BlockIterator(player, range);
 		while (iter.hasNext()) {

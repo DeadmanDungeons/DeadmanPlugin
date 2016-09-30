@@ -11,8 +11,8 @@ import java.util.Set;
 
 import org.bukkit.configuration.ConfigurationSection;
 
-import com.deadmandungeons.deadmanplugin.DeadmanPlugin;
 import com.deadmandungeons.deadmanplugin.Conversion.Converter;
+import com.deadmandungeons.deadmanplugin.DeadmanPlugin;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
@@ -43,10 +43,10 @@ public class DeadmanConfig {
 	
 	// Logger messages
 	private static final String MISSING_VALUE = "The %s config value at path '%s' is missing. Defaulting to value '%s'";
-	private static final String INVALID_VALUE = "The $s config value at path '%s' is invalid. Defaulting to value '%s'";
+	private static final String INVALID_VALUE = "The %s config value at path '%s' is invalid. Defaulting to value '%s'";
 	private static final String NONUNIQUE_VALUE = "The values for the '%s' config entry group are not unique. "
 			+ "The default values will be used for this group";
-			
+	
 	// Exception messages
 	private static final String MISSING_CONVERTER = "A Converter for config values of type '%s' is not registered! "
 			+ "use plugin.getConversion() to register a Converter for this type.";
@@ -54,7 +54,7 @@ public class DeadmanConfig {
 			+ "was either missing or invalid! The default configuration must contain valid values.";
 	private static final String FAILED_TO_LOAD_GROUP = "The values for the '%s' config entry group in the default configuration file "
 			+ "are not unique! The default configuraiton must contain unique values among config entry groups";
-			
+	
 	private final Map<BaseConfigEntry<?, ?>, EntryValue> entryValues = new HashMap<>();
 	private final Map<String, GroupOptions> entryGroups = new HashMap<>();
 	
@@ -79,7 +79,7 @@ public class DeadmanConfig {
 	 * @return a new ConfigEntry instance for a single value config entry
 	 */
 	public <T> ConfigEntry<T> entry(Class<T> type, String path) {
-		ConfigEntry<T> entry = new ConfigEntry<T>(type, path);
+		ConfigEntry<T> entry = new ConfigEntry<>(type, path);
 		entryValues.put(entry, null);
 		return entry;
 	}
@@ -106,7 +106,7 @@ public class DeadmanConfig {
 	 * @return a new ListConfigEntry instance for a value list config entry
 	 */
 	public <T> ListConfigEntry<T> listEntry(Class<T> type, String path) {
-		ListConfigEntry<T> entry = new ListConfigEntry<T>(type, path);
+		ListConfigEntry<T> entry = new ListConfigEntry<>(type, path);
 		entryValues.put(entry, null);
 		return entry;
 	}
@@ -146,8 +146,19 @@ public class DeadmanConfig {
 	 * @param path - The path to the map config entry
 	 * @return a new MapConfigEntry instance for a value map config entry
 	 */
-	public <T> MapConfigEntry<T> mapEntry(Class<T> type, String path) {
-		MapConfigEntry<T> entry = new MapConfigEntry<T>(type, path);
+	public <T> MapConfigEntry<String, T> mapEntry(Class<T> type, String path) {
+		return mapEntry(String.class, type, path);
+	}
+	
+	/**
+	 * @see {@link #mapEntry(Class, String)}
+	 * @param keyType - The type of the config entry key
+	 * @param type - The type of the config entry value
+	 * @param path - The path to the map config entry
+	 * @return a new MapConfigEntry instance for a value map config entry
+	 */
+	public <K, T> MapConfigEntry<K, T> mapEntry(Class<K> keyType, Class<T> type, String path) {
+		MapConfigEntry<K, T> entry = new MapConfigEntry<>(keyType, type, path);
 		entryValues.put(entry, null);
 		return entry;
 	}
@@ -295,8 +306,8 @@ public class DeadmanConfig {
 			return entryValue;
 		}
 		
-		protected Converter<T> getConverter(DeadmanPlugin plugin, Class<T> type) {
-			Converter<T> converter = plugin.getConversion().getConverter(type);
+		protected <T2> Converter<T2> getConverter(DeadmanPlugin plugin, Class<T2> type) {
+			Converter<T2> converter = plugin.getConversion().getConverter(type);
 			if (converter == null) {
 				throw new IllegalStateException(String.format(MISSING_CONVERTER, type.getCanonicalName()));
 			}
@@ -416,10 +427,13 @@ public class DeadmanConfig {
 		
 	}
 	
-	public class MapConfigEntry<T> extends BaseConfigEntry<T, Map<String, T>> {
+	public class MapConfigEntry<K, T> extends BaseConfigEntry<T, Map<K, T>> {
 		
-		private MapConfigEntry(Class<T> type, String path) {
+		private final Class<K> keyType;
+		
+		private MapConfigEntry(Class<K> keyType, Class<T> type, String path) {
 			super(type, path);
+			this.keyType = keyType;
 		}
 		
 		@Override
@@ -429,15 +443,16 @@ public class DeadmanConfig {
 			if (val == null) {
 				return null;
 			}
+			Converter<K> keyConverter = getConverter(plugin, keyType);
 			Converter<T> converter = getConverter(plugin, type);
 			section = plugin.getConfig().getDefaults().getConfigurationSection(path);
-			Map<String, T> defaultValue = convertMap(converter, section.getValues(false));
+			Map<K, T> defaultValue = convertMap(keyConverter, converter, section.getValues(false));
 			if (defaultValue == null) {
 				return null;
 			}
 			
 			if (plugin.getConfig().isSet(path)) {
-				Map<String, T> value = convertMap(converter, val);
+				Map<K, T> value = convertMap(keyConverter, converter, val);
 				if (value != null) {
 					return new EntryValue(value, defaultValue, false);
 				} else {
@@ -450,14 +465,17 @@ public class DeadmanConfig {
 			return new EntryValue(defaultValue, defaultValue, true);
 		}
 		
-		private Map<String, T> convertMap(Converter<T> converter, Map<String, ?> vals) {
+		private Map<K, T> convertMap(Converter<K> keyConverter, Converter<T> valueConverter, Map<?, ?> vals) {
 			if (vals == null) {
 				return null;
 			}
-			ImmutableMap.Builder<String, T> mapBuilder = ImmutableMap.builder();
-			for (String key : vals.keySet()) {
-				Object val = vals.get(key);
-				T value = converter.convert(val);
+			ImmutableMap.Builder<K, T> mapBuilder = ImmutableMap.builder();
+			for (Map.Entry<?, ?> entry : vals.entrySet()) {
+				K key = keyConverter.convert(entry.getKey());
+				if (key == null) {
+					return null;
+				}
+				T value = valueConverter.convert(entry.getValue());
 				if (value == null) {
 					return null;
 				}

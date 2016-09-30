@@ -7,7 +7,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 
 import com.deadmandungeons.deadmanplugin.filedata.DataEntry;
-import com.deadmandungeons.deadmanplugin.filedata.DataEntry.Key;
 
 
 /**

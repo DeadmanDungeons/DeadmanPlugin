@@ -103,7 +103,7 @@ public class DeadmanExecutor implements CommandExecutor {
 			@Override
 			public Result<Integer> convertCommandArg(String argName, String arg) {
 				Integer num = (DeadmanUtils.isInteger(arg) ? Integer.parseInt(arg) : null);
-				return num != null ? new Result<Integer>(num) : new Result<Integer>(String.format(NOT_INT, arg));
+				return num != null ? Result.success(num) : Result.<Integer> fail(String.format(NOT_INT, arg));
 			}
 		});
 		registerConverter(ChatColor.class, new ArgumentConverter<ChatColor>() {
@@ -111,7 +111,7 @@ public class DeadmanExecutor implements CommandExecutor {
 			@Override
 			public Result<ChatColor> convertCommandArg(String argName, String arg) {
 				ChatColor color = DeadmanExecutor.this.plugin.getConversion().toChatColor(arg);
-				return color != null ? new Result<ChatColor>(color) : new Result<ChatColor>(String.format(NOT_CHATCOLOR, arg));
+				return color != null ? Result.success(color) : Result.<ChatColor> fail(String.format(NOT_CHATCOLOR, arg));
 			}
 		});
 		registerConverter(Long.class, new ArgumentConverter<Long>() {
@@ -119,7 +119,7 @@ public class DeadmanExecutor implements CommandExecutor {
 			@Override
 			public Result<Long> convertCommandArg(String argName, String arg) {
 				long duration = DeadmanUtils.parseDuration(arg);
-				return duration > 0 ? new Result<Long>(duration) : new Result<Long>(String.format(NOT_DURATION, argName));
+				return duration > 0 ? Result.success(duration) : Result.<Long> fail(String.format(NOT_DURATION, argName));
 			}
 		});
 		registerConverter(Boolean.class, new ArgumentConverter<Boolean>() {
@@ -127,7 +127,7 @@ public class DeadmanExecutor implements CommandExecutor {
 			@Override
 			public Result<Boolean> convertCommandArg(String argName, String arg) {
 				Boolean bool = BooleanUtils.toBooleanObject(arg);
-				return bool != null ? new Result<Boolean>(bool) : new Result<Boolean>(String.format(NOT_BOOLEAN, arg, argName));
+				return bool != null ? Result.success(bool) : Result.<Boolean> fail(String.format(NOT_BOOLEAN, arg, argName));
 			}
 		});
 	}
@@ -218,8 +218,8 @@ public class DeadmanExecutor implements CommandExecutor {
 		}
 		
 		Result<Arguments> conversionResult = subCmd.convert();
-		if (conversionResult.isError()) {
-			sender.sendMessage(ChatColor.RED + conversionResult.getErrorMessage());
+		if (!conversionResult.isSuccess()) {
+			sender.sendMessage(ChatColor.RED + conversionResult.getFailReason());
 			return false;
 		}
 		

@@ -2,11 +2,12 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.deadmandungeons</groupId>
 	<artifactId>deadman-plugin</artifactId>
-	<version>1.8.2</version>
+	<version>1.8.5</version>
 	<name>DeadmanPlugin</name>
 	
 	<build>
 		<sourceDirectory>src</sourceDirectory>
+		<finalName>DeadmanPlugin</finalName>
 		
 		<resources>
 			<resource>
