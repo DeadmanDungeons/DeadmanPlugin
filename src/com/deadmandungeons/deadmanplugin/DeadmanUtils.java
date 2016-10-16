@@ -77,12 +77,12 @@ public class DeadmanUtils {
 	
 	/**
 	 * This method will parse a colon delimited set of time amounts and calculate the duration in milliseconds.
-	 * Supported time intervals are days, hours, and minutes in the format '#d:#h:#m' <br>
+	 * Supported time intervals are days, hours, minutes, and seconds in the format '#d:#h:#m:#s' <br>
 	 * Example time amounts:
 	 * <ul>
 	 * <li>11d:12h:30m</li>
 	 * <li>5d:30m</li>
-	 * <li>5d:45m</li>
+	 * <li>5d:45m:20s</li>
 	 * <li>45m</li>
 	 * </ul>
 	 * @param durationStr - The String representation of a duration of time given in the format stated above
@@ -118,20 +118,30 @@ public class DeadmanUtils {
 			return TimeUnit.HOURS.toMillis(Integer.parseInt(duration));
 		} else if (measure == 'm' || measure == 'M') {
 			return TimeUnit.MINUTES.toMillis(Integer.parseInt(duration));
+		} else if (measure == 's' || measure == 'S') {
+			return TimeUnit.SECONDS.toMillis(Integer.parseInt(duration));
 		}
 		return -1;
 	}
 	
 	public static String getOrdinalSuffix(int value) {
-		switch (value % 10) {
-			case 1:
-				return value + "st";
-			case 2:
-				return value + "nd";
-			case 3:
-				return value + "rd";
-			default:
+		switch (value % 100) {
+			case 11:
+			case 12:
+			case 13:
 				return value + "th";
+			default: {
+				switch (value % 10) {
+					case 1:
+						return value + "st";
+					case 2:
+						return value + "nd";
+					case 3:
+						return value + "rd";
+					default:
+						return value + "th";
+				}
+			}
 		}
 	}
 	
