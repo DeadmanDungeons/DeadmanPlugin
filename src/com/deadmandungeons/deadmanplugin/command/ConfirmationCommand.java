@@ -125,6 +125,20 @@ public abstract class ConfirmationCommand<T> {
 	}
 	
 	/**
+	 * The {@link #onTerminate(Player, Object)} event method will <b>not</b> be invoked for the given player
+	 * if they were 'prompted' and removed from this ConfirmationCommand
+	 * @param player - The {@link Player} to be no longer declared as 'prompted'
+	 * @return the data object of type T that was stored for the removed player, or null if the given player was not declared as 'prompted'
+	 */
+	public final T removePromtedPlayerSilently(Player player) {
+		ConfirmationInfo<?> info = promptedPlayers.get(player.getUniqueId());
+		if (info != null && info.confirmationCmd == this) {
+			return type.cast(removePlayer(player.getUniqueId()).data);
+		}
+		return null;
+	}
+	
+	/**
 	 * Remove all 'prompted' players for this ConfirmationCommand, and invoke {@link #onTerminate(Player, Object)} for each removed player
 	 */
 	public final void removePromptedPlayers() {

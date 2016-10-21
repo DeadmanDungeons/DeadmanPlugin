@@ -12,11 +12,11 @@ public interface TimerExecutor {
 	 * @param timer - The timer object
 	 * @param isPerMinute - true if the timer is running every minute
 	 */
-	public abstract void onTimerTick(Timer timer, boolean isPerMinute);
+	void onTimerTick(Timer timer, boolean isPerMinute);
 	
 	/**
 	 * This will be called when the timer has ended. The timer will be null at this point
 	 */
-	public abstract void onTimerEnd();
+	void onTimerEnd();
 	
 }
