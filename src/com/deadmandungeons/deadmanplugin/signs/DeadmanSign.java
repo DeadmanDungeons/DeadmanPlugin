@@ -36,9 +36,6 @@ public abstract class DeadmanSign<T> {
 	private final MaterialData materialData;
 	
 	public DeadmanSign(Sign sign, DataEntry dataEntry, T signObject) {
-		if (!handlers.containsKey(getClass())) {
-			throw new IllegalStateException("A DeadmanSignHandler has not been set for the " + getClass().getCanonicalName());
-		}
 		Validate.notNull(sign, "sign cannot be null");
 		Validate.notNull(dataEntry, "dataEntry cannot be null");
 		Validate.notNull(signObject, "signObject cannot be null");

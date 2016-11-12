@@ -1,53 +1,5 @@
 name: DeadmanPlugin
 main: com.deadmandungeons.deadmanplugin.DeadmanCore
-version: 1.8.7
+version: 1.8.9
 author: Weasel_Squeezer
 website: http://www.deadmandungeons.com
-
-softdepend: [Vault, WorldEdit, WorldGuard]
-
-permissions:
-    deadmandungeons.a:
-        default: false
-    deadmandungeons.b:
-        default: false
-    deadmandungeons.c:
-        default: false
-    deadmandungeons.d:
-        default: false
-    deadmandungeons.tutorial:
-        default: false
-    deadmandungeons.sewers:
-        default: false
-    deadmandungeons.ruins:
-        default: false
-    deadmandungeons.inferno:
-        default: false
-    deadmandungeons.gladiator:
-        default: false
-    deadmandungeons.freeman:
-        default: false
-    deadmandungeons.knight:
-        default: false
-    deadmandungeons.lord:
-        default: false
-    deadmandungeons.legendary:
-        default: false
-    deadmandungeons.vip:
-        default: false
-    deadmandungeons.sorcerer0:
-        default: false
-    deadmandungeons.sorcerer1:
-        default: false
-    deadmandungeons.sorcerer2:
-        default: false
-    deadmandungeons.sorcerer3:
-        default: false
-    deadmandungeons.sorcerer4:
-        default: false
-    deadmandungeons.grandmage:
-        default: false
-    deadmandungeons.mod:
-        default: false
-    deadmandungeons.admin:
-        default: false

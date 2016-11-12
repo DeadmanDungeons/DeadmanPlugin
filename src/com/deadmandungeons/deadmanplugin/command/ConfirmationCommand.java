@@ -1,9 +1,9 @@
 package com.deadmandungeons.deadmanplugin.command;
 
-import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
-import java.util.Map.Entry;
+import java.util.NoSuchElementException;
 import java.util.UUID;
 
 import org.apache.commons.lang.Validate;
@@ -142,14 +142,14 @@ public abstract class ConfirmationCommand<T> {
 	 * Remove all 'prompted' players for this ConfirmationCommand, and invoke {@link #onTerminate(Player, Object)} for each removed player
 	 */
 	public final void removePromptedPlayers() {
-		for (UUID uuid : new ArrayList<UUID>(promptedPlayers.keySet())) {
-			ConfirmationInfo<?> info = promptedPlayers.get(uuid);
-			if (info.confirmationCmd == this) {
-				removePlayer(uuid);
-				Player player = Bukkit.getPlayer(uuid);
-				if (player != null) {
-					onTerminate(player, type.cast(info.data));
-				}
+		PromptedPlayerIterator iter = new PromptedPlayerIterator();
+		while (iter.hasNext()) {
+			PromptedPlayer<T> promptedPlayer = iter.next();
+			iter.remove();
+			
+			Player player = Bukkit.getPlayer(promptedPlayer.getPlayerId());
+			if (player != null) {
+				onTerminate(player, promptedPlayer.getStoredData());
 			}
 		}
 	}
@@ -160,13 +160,16 @@ public abstract class ConfirmationCommand<T> {
 	 * @param data - The data object of type T to check against the stored data object for the prompted players
 	 */
 	public final void removePromptedPlayers(T data) {
-		for (UUID uuid : new ArrayList<UUID>(promptedPlayers.keySet())) {
-			ConfirmationInfo<?> info = promptedPlayers.get(uuid);
-			if (info.confirmationCmd == this && ((info.data == null && data == null) || (data != null && data.equals(info.data)))) {
-				removePlayer(uuid);
-				Player player = Bukkit.getPlayer(uuid);
+		PromptedPlayerIterator iter = new PromptedPlayerIterator();
+		while (iter.hasNext()) {
+			PromptedPlayer<T> promptedPlayer = iter.next();
+			T storedData = promptedPlayer.getStoredData();
+			if ((storedData == null && data == null) || (data != null && data.equals(storedData))) {
+				iter.remove();
+				
+				Player player = Bukkit.getPlayer(promptedPlayer.getPlayerId());
 				if (player != null) {
-					onTerminate(player, type.cast(info.data));
+					onTerminate(player, storedData);
 				}
 			}
 		}
@@ -192,17 +195,10 @@ public abstract class ConfirmationCommand<T> {
 	}
 	
 	/**
-	 * @return a new map containing all the 'prompted' players for this ConfirmationCommand with their UUID as the key,
-	 * and the stored data object as the value
+	 * @return an iterator for the players prompted by this ConfirmationCommand
 	 */
-	public final Map<UUID, T> getPromptedPlayers() {
-		Map<UUID, T> players = new HashMap<UUID, T>();
-		for (Entry<UUID, ConfirmationInfo<?>> entry : promptedPlayers.entrySet()) {
-			if (entry.getValue().confirmationCmd == this) {
-				players.put(entry.getKey(), type.cast(entry.getValue().data));
-			}
-		}
-		return players;
+	public final Iterator<PromptedPlayer<T>> getPromptedPlayerIterator() {
+		return new PromptedPlayerIterator();
 	}
 	
 	/**
@@ -289,7 +285,7 @@ public abstract class ConfirmationCommand<T> {
 		ConfirmationInfo<?> info = promptedPlayers.remove(uuid);
 		if (info != null) {
 			if (info.task != null) {
-				Bukkit.getScheduler().cancelTask(info.task.getTaskId());
+				info.task.cancel();
 			}
 			return info;
 		}
@@ -335,7 +331,72 @@ public abstract class ConfirmationCommand<T> {
 	}
 	
 	
-	private static final class AcceptCommand implements PseudoCommand {
+	public static class PromptedPlayer<T> {
+		
+		private final UUID playerId;
+		private final T storedData;
+		
+		private PromptedPlayer(UUID playerId, T storedData) {
+			this.playerId = playerId;
+			this.storedData = storedData;
+		}
+		
+		public UUID getPlayerId() {
+			return playerId;
+		}
+		
+		public T getStoredData() {
+			return storedData;
+		}
+		
+	}
+	
+	private class PromptedPlayerIterator implements Iterator<PromptedPlayer<T>> {
+		
+		private final Iterator<Map.Entry<UUID, ConfirmationInfo<?>>> iterator = promptedPlayers.entrySet().iterator();
+		private Map.Entry<UUID, ConfirmationInfo<?>> next;
+		
+		@Override
+		public boolean hasNext() {
+			while (iterator.hasNext()) {
+				Map.Entry<UUID, ConfirmationInfo<?>> entry = iterator.next();
+				if (entry.getValue().confirmationCmd == ConfirmationCommand.this) {
+					next = entry;
+					return true;
+				}
+			}
+			return false;
+		}
+		
+		@Override
+		public PromptedPlayer<T> next() {
+			if (next == null) {
+				throw new NoSuchElementException();
+			}
+			return new PromptedPlayer<>(next.getKey(), type.cast(next.getValue().data));
+		}
+		
+		@Override
+		public void remove() {
+			if (next == null) {
+				throw new IllegalStateException();
+			}
+			iterator.remove();
+			
+			if (next.getValue().task != null) {
+				next.getValue().task.cancel();
+			}
+			Player player = Bukkit.getPlayer(next.getKey());
+			if (player != null) {
+				onTerminate(player, type.cast(next.getValue().data));
+			}
+			next = null;
+		}
+		
+	}
+	
+	
+	private static class AcceptCommand implements PseudoCommand {
 		
 		@Override
 		public boolean execute(CommandSender user) {
@@ -351,7 +412,7 @@ public abstract class ConfirmationCommand<T> {
 		}
 	}
 	
-	private static final class DeclineCommand implements PseudoCommand {
+	private static class DeclineCommand implements PseudoCommand {
 		
 		@Override
 		public boolean execute(CommandSender user) {

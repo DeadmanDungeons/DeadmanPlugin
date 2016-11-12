@@ -29,6 +29,7 @@ import com.deadmandungeons.deadmanplugin.Messenger;
 import com.deadmandungeons.deadmanplugin.Result;
 import com.deadmandungeons.deadmanplugin.command.Arguments.SubCommand;
 import com.deadmandungeons.deadmanplugin.command.CommandInfo.CommandInfoImpl;
+import com.google.common.primitives.Ints;
 
 // TODO use Messenger but check if message exists and fallback on hardcoded messages
 /**
@@ -102,7 +103,7 @@ public class DeadmanExecutor implements CommandExecutor {
 			
 			@Override
 			public Result<Integer> convertCommandArg(String argName, String arg) {
-				Integer num = (DeadmanUtils.isInteger(arg) ? Integer.parseInt(arg) : null);
+				Integer num = Ints.tryParse(arg);
 				return num != null ? Result.success(num) : Result.<Integer> fail(String.format(NOT_INT, arg));
 			}
 		});

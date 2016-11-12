@@ -289,15 +289,6 @@ public class DeadmanUtils {
 		return null;
 	}
 	
-	public static boolean isInteger(String number) {
-		try {
-			Integer.parseInt(number);
-		} catch (NumberFormatException e) {
-			return false;
-		}
-		return true;
-	}
-	
 	public static boolean isNumeric(String number) {
 		return number != null && !number.isEmpty() && StringUtils.isNumeric(number);
 	}

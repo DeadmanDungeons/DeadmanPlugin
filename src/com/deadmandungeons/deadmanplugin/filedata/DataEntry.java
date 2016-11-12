@@ -15,6 +15,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
 import org.bukkit.material.MaterialData;
 
+import com.deadmandungeons.deadmanplugin.Coord;
 import com.deadmandungeons.deadmanplugin.DeadmanUtils;
 import com.deadmandungeons.deadmanplugin.PlayerId;
 import com.deadmandungeons.deadmanplugin.WorldCoord;
@@ -23,6 +24,7 @@ import com.deadmandungeons.deadmanplugin.timer.LocalTimer;
 import com.deadmandungeons.deadmanplugin.timer.Timer;
 import com.google.common.collect.ImmutableMap;
 
+// TODO this entire class can be refactored to improve abstraction by defining an object's keys in the object itself
 /**
  * A container class for the Key/Value pairs in a single data entry in a YAML file.<br>
  * Additional formatting utility methods are provided to format specific objects as specified by {@link #toString()}<br>
@@ -302,19 +304,53 @@ public class DataEntry implements Cloneable {
 	
 	
 	/**
+	 * @return the Coord defined by keys: {@link #X_KEY}, {@link #Y_KEY}, {@link #Z_KEY}.
+	 * Or null if the minimum required values did not exist, or were invalid
+	 */
+	public final Coord getCoord() {
+		Number x = getNumber(X_KEY);
+		Number y = getNumber(Y_KEY);
+		Number z = getNumber(Z_KEY);
+		if (x != null && y != null && z != null) {
+			return new Coord(x.intValue(), y.intValue(), z.intValue());
+		}
+		return null;
+	}
+	
+	/**
+	 * @param coord - The {@link Coord} object to set and be represented by the
+	 * {@link #X_KEY}, {@link #Y_KEY}, and {@link #Z_KEY} keys.<br>
+	 * If coord is null, all of the above key/value pairs will be removed from this DataEntry.
+	 */
+	public final void setCoord(Coord coord) {
+		if (coord != null) {
+			setValue(X_KEY, coord.getX());
+			setValue(Y_KEY, coord.getY());
+			setValue(Z_KEY, coord.getZ());
+		} else {
+			setValue(X_KEY, null);
+			setValue(Y_KEY, null);
+			setValue(Z_KEY, null);
+		}
+	}
+	
+	/**
+	 * @param coord - The {@link Coord} to be formatted
+	 * @return the formatted String representation of the given Coord with the keys: {@link #X_KEY}, {@link #Y_KEY}, {@link #Z_KEY}
+	 */
+	public static String formatCoord(Coord coord) {
+		return format(ImmutableMap.<DataKey, Object> of(X_KEY, coord.getX(), Y_KEY, coord.getY(), Z_KEY, coord.getZ()));
+	}
+	
+	/**
 	 * @return the WorldCoord defined by keys: {@link #WORLD_KEY}, {@link #X_KEY}, {@link #Y_KEY}, {@link #Z_KEY}.
 	 * Or null if the minimum required values did not exist, or were invalid
 	 */
 	public final WorldCoord getWorldCoord() {
 		World world = getWorld();
-		Number x = getNumber(X_KEY);
-		Number y = getNumber(Y_KEY);
-		Number z = getNumber(Z_KEY);
-		if (world != null && x != null && y != null && z != null) {
-			int yInt = y.intValue();
-			if (yInt >= 0 && yInt <= world.getMaxHeight()) {
-				return new WorldCoord(world, x.intValue(), yInt, z.intValue());
-			}
+		Coord coord = getCoord();
+		if (world != null && coord != null && coord.getY() >= 0 && coord.getY() <= world.getMaxHeight()) {
+			return new WorldCoord(world, coord);
 		}
 		return null;
 	}
@@ -327,14 +363,10 @@ public class DataEntry implements Cloneable {
 	public final void setWorldCoord(WorldCoord coord) {
 		if (coord != null) {
 			setWorld(coord.getWorld());
-			setValue(X_KEY, coord.getX());
-			setValue(Y_KEY, coord.getY());
-			setValue(Z_KEY, coord.getZ());
+			setCoord(coord);
 		} else {
 			setWorld(null);
-			setValue(X_KEY, null);
-			setValue(Y_KEY, null);
-			setValue(Z_KEY, null);
+			setCoord(null);
 		}
 	}
 	

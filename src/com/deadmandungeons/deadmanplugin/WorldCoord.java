@@ -12,12 +12,13 @@ import org.bukkit.block.Block;
 
 /**
  * A simple immutable class that represents a block coordinate in a world.<br>
- * This can be used as an immutable alternative to {@link Location} if the int block coordinate is all that is needed.
+ * This can be used as an immutable alternative to {@link Location} if the integer block coordinate is all that is needed.
  * Additionally, a WorldCoord can easily be created from a Location using {@link #WorldCoord(Location)}, and converted
- * to a Location using {@link #toLocation()}.
+ * to a Location using {@link #toLocation()}.<br>
+ * The {@link WorldCoord#parse(String)} static method can parse the results of {@link #toString()} and {@link #toCompactString()}
  * @author Jon
  */
-public class WorldCoord {
+public class WorldCoord extends Coord {
 	
 	// Used for parsing the result of toString()
 	private static final Pattern VERBOSE_PATTERN = Pattern.compile("X\\[(-?\\d+)\\],Y\\[(-?\\d+)\\],Z\\[(-?\\d+)\\],W\\[([^\\]]+)\\]");
@@ -25,7 +26,6 @@ public class WorldCoord {
 	private static final Pattern COMPACT_PATTERN = Pattern.compile("^X(-?\\d+)Y(-?\\d+)Z(-?\\d+)W(.+)");
 	
 	private final World world;
-	private final int x, y, z;
 	
 	/**
 	 * Synonymous to {@link #WorldCoord(Location) new WorldCoord(block.getLocation())}
@@ -45,6 +45,16 @@ public class WorldCoord {
 	}
 	
 	/**
+	 * Constructs a new WorldCoord with the given world and coordinates
+	 * @param world - The world of this new WorldCoord
+	 * @param coord - The coordinates of this new WorldCoord
+	 * @throws IllegalArgumentException if world is null or if the coordinates y is less than 0 or greater than the world maxHeight
+	 */
+	public WorldCoord(World world, Coord coord) {
+		this(world, coord.x, coord.y, coord.z);
+	}
+	
+	/**
 	 * Constructs a new WorldCoord with the given World and block coordinates
 	 * @param world - The world of this new WorldCoord
 	 * @param x - The x-coordinate of this new WorldCoord
@@ -53,16 +63,15 @@ public class WorldCoord {
 	 * @throws IllegalArgumentException if world is null or if y is less than 0 or greater than the world maxHeight
 	 */
 	public WorldCoord(World world, int x, int y, int z) throws IllegalArgumentException {
+		super(x, y, z);
 		if (world == null) {
 			throw new IllegalArgumentException("world cannot be null");
 		}
 		if (y < 0 || y > world.getMaxHeight()) {
 			throw new IllegalArgumentException("y cannot be less than 0 or greater than the world maxHeight");
 		}
+		
 		this.world = world;
-		this.x = x;
-		this.y = y;
-		this.z = z;
 	}
 	
 	
@@ -94,27 +103,6 @@ public class WorldCoord {
 	 */
 	public World getWorld() {
 		return world;
-	}
-	
-	/**
-	 * @return the x-coordinate for the block at this WorldCoord
-	 */
-	public int getX() {
-		return x;
-	}
-	
-	/**
-	 * @return the y-coordinate for the block at this WorldCoord. This will not be less than 0 or greater than the world maxHeight.
-	 */
-	public int getY() {
-		return y;
-	}
-	
-	/**
-	 * @return the z-coordinate for the block at this WorldCoord
-	 */
-	public int getZ() {
-		return z;
 	}
 	
 	/**
@@ -170,14 +158,15 @@ public class WorldCoord {
 	 * The returned String can be parsed back into a WorldCoord using {@link #parse(String)}
 	 * @return a compact String representation of this WorldCoord
 	 */
+	@Override
 	public String toCompactString() {
-		return "X" + x + "Y" + y + "Z" + z + "W" + world.getName();
+		return super.toCompactString() + "W" + world.getName();
 	}
 	
 	/**
 	 * This can parse a String representation of a WorldCoord as formatted by
 	 * either the {@link #toString()} or {@link #toCompactString()} methods.
-	 * @param coordStr - The String represenation of a WorldCoord
+	 * @param coordStr - The String representation of a WorldCoord
 	 * @return the parsed WorldCoord or null if the given coordStr was not valid
 	 */
 	public static WorldCoord parse(String coordStr) {
