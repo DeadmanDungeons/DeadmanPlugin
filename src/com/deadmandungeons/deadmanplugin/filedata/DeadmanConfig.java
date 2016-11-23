@@ -440,13 +440,15 @@ public class DeadmanConfig {
 		protected EntryValue loadValue(DeadmanPlugin plugin) {
 			ConfigurationSection section = plugin.getConfig().getConfigurationSection(path);
 			Map<String, ?> val = (section != null ? section.getValues(false) : null);
-			if (val == null) {
-				return null;
+			
+			section = plugin.getConfig().getDefaults().getConfigurationSection(path);
+			Map<String, ?> defaultVal = section.getValues(false);
+			if (val == null || val.isEmpty()) {
+				val = defaultVal;
 			}
 			Converter<K> keyConverter = getConverter(plugin, keyType);
 			Converter<T> converter = getConverter(plugin, type);
-			section = plugin.getConfig().getDefaults().getConfigurationSection(path);
-			Map<K, T> defaultValue = convertMap(keyConverter, converter, section.getValues(false));
+			Map<K, T> defaultValue = convertMap(keyConverter, converter, defaultVal);
 			if (defaultValue == null) {
 				return null;
 			}
@@ -460,7 +462,6 @@ public class DeadmanConfig {
 				}
 			} else {
 				plugin.getLogger().warning(String.format(MISSING_VALUE, type.getName() + " Map", path, val.toString()));
-				
 			}
 			return new EntryValue(defaultValue, defaultValue, true);
 		}
