@@ -185,7 +185,7 @@ public class DeadmanUtils {
 	 */
 	public static boolean isInventoryFree(Player player, int amount) {
 		Inventory inv = player.getInventory();
-		ItemStack[] items = inv.getContents();
+		ItemStack[] items = inv.getStorageContents();
 		int emptySlots = 0;
 		for (ItemStack is : items) {
 			if (is == null) {

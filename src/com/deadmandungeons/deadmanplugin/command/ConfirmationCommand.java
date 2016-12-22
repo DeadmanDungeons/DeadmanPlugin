@@ -191,7 +191,7 @@ public abstract class ConfirmationCommand<T> {
 	 */
 	public final T getStoredData(Player player) {
 		ConfirmationInfo<?> info = promptedPlayers.get(player.getUniqueId());
-		return (info != null ? type.cast(info.data) : null);
+		return (info != null && info.confirmationCmd == this ? type.cast(info.data) : null);
 	}
 	
 	/**
