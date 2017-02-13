@@ -1,9 +1,5 @@
-*.prefs
 *.class
-*.log
-*.jar
-*.war
-*.ear
 .classpath
+.settings/
 /bin
 /target
