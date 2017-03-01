@@ -47,14 +47,6 @@ public class DeadmanConfig {
 	private static final String NONUNIQUE_VALUE = "The values for the '%s' config entry group are not unique. "
 			+ "The default values will be used for this group";
 	
-	// Exception messages
-	private static final String MISSING_CONVERTER = "A Converter for config values of type '%s' is not registered! "
-			+ "use plugin.getConversion() to register a Converter for this type.";
-	private static final String FAILED_TO_LOAD = "A '%s' value for the config entry at path '%s' in the default configuration file "
-			+ "was either missing or invalid! The default configuration must contain valid values.";
-	private static final String FAILED_TO_LOAD_GROUP = "The values for the '%s' config entry group in the default configuration file "
-			+ "are not unique! The default configuraiton must contain unique values among config entry groups";
-	
 	private final Map<BaseConfigEntry<?, ?>, EntryValue> entryValues = new HashMap<>();
 	private final Map<String, GroupOptions> entryGroups = new HashMap<>();
 	
@@ -201,6 +193,12 @@ public class DeadmanConfig {
 		return options;
 	}
 	
+	/**
+	 * @return an unmodifiable Set containing all of the currently defined config entries
+	 */
+	public Set<BaseConfigEntry<?, ?>> getEntries() {
+		return Collections.unmodifiableSet(entryValues.keySet());
+	}
 	
 	// TODO maybe restrict access to this method to only be used by DeadmanPlugin class
 	public void loadEntries(DeadmanPlugin plugin) throws IllegalStateException {
@@ -215,7 +213,8 @@ public class DeadmanConfig {
 			EntryValue entryValue = entry.loadValue(plugin);
 			// Check if the default configuration contains a missing or invalid value
 			if (entryValue == null) {
-				throw new IllegalStateException(String.format(FAILED_TO_LOAD, entry.getType().getName(), entry.getPath()));
+				throw new IllegalStateException("A '" + entry.getType().getName() + "' value for the config entry at path '" + entry.getPath()
+						+ "' in the default configuration file was either missing or invalid! The default configuration must contain valid values.");
 			}
 			
 			for (String groupName : entry.groups) {
@@ -226,7 +225,8 @@ public class DeadmanConfig {
 				}
 				// Check if the values or grouped entries in default configuration are not unique
 				if (!groupValidator.validateDefaultValue(groupName, entryValue.defaultValue)) {
-					throw new IllegalStateException(String.format(FAILED_TO_LOAD_GROUP, groupName));
+					throw new IllegalStateException("The values for the '" + groupName + "' config entry group in the default configuration file "
+							+ "are not unique! The default configuraiton must contain unique values among config entry groups");
 				}
 			}
 			loadedValues.put(entry, entryValue);
@@ -309,7 +309,8 @@ public class DeadmanConfig {
 		protected <T2> Converter<T2> getConverter(DeadmanPlugin plugin, Class<T2> type) {
 			Converter<T2> converter = plugin.getConversion().getConverter(type);
 			if (converter == null) {
-				throw new IllegalStateException(String.format(MISSING_CONVERTER, type.getCanonicalName()));
+				throw new IllegalStateException("A Converter for config values of type '" + type.getCanonicalName()
+						+ "' is not registered! use plugin.getConversion() to register a Converter for this type.");
 			}
 			return converter;
 		}
