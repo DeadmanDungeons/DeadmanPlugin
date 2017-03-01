@@ -6,8 +6,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import com.deadmandungeons.deadmanplugin.command.ArgumentInfo.ArgumentInfoImpl;
-
 /**
  * This annotation is to be used to define a sub-command for a {@link Command}.
  * A sub-command is just a variation in the provided arguments such as:
@@ -51,13 +49,13 @@ public @interface SubCommandInfo {
 	
 	public static class SubCommandInfoImpl implements Annotation, SubCommandInfo {
 		
-		private final ArgumentInfoImpl[] arguments;
+		private final ArgumentInfo[] arguments;
 		private final String[] permissions;
 		private final String description;
 		private final boolean inGameOnly;
 		
-		public SubCommandInfoImpl(ArgumentInfoImpl[] arguments, String[] permissions, String description, Boolean inGameOnly) {
-			this.arguments = (arguments != null ? arguments : new ArgumentInfoImpl[0]);
+		public SubCommandInfoImpl(ArgumentInfo[] arguments, String[] permissions, String description, Boolean inGameOnly) {
+			this.arguments = (arguments != null ? arguments : new ArgumentInfo[0]);
 			this.permissions = (permissions != null ? permissions : new String[0]);
 			this.description = (description != null ? description : "");
 			this.inGameOnly = (inGameOnly != null ? inGameOnly : false);

@@ -8,8 +8,6 @@ import java.lang.annotation.Target;
 
 import org.apache.commons.lang.Validate;
 
-import com.deadmandungeons.deadmanplugin.command.SubCommandInfo.SubCommandInfoImpl;
-
 /**
  * A {@link Command} class must define this annotation to specify exactly how the Command should be executed.
  * This annotation will then be used to build a valid {@link Arguments} object for that Command to guarantee that
@@ -67,17 +65,17 @@ public @interface CommandInfo {
 		private final String[] aliases;
 		private final String[] permissions;
 		private final boolean inGameOnly;
-		private final SubCommandInfoImpl[] subCommands;
+		private final SubCommandInfo[] subCommands;
 		
 		public CommandInfoImpl(String name, String description, String[] aliases, String[] permissions, Boolean inGameOnly,
-				SubCommandInfoImpl[] subCommands) {
+				SubCommandInfo[] subCommands) {
 			Validate.notNull(name);
 			this.name = name;
 			this.description = (description != null ? description : "");
 			this.aliases = (aliases != null ? aliases : new String[0]);
 			this.permissions = (permissions != null ? permissions : new String[0]);
 			this.inGameOnly = (inGameOnly != null ? inGameOnly : false);
-			this.subCommands = (subCommands != null ? subCommands : new SubCommandInfoImpl[0]);
+			this.subCommands = (subCommands != null ? subCommands : new SubCommandInfo[0]);
 		}
 		
 		@Override
