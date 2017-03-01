@@ -394,9 +394,11 @@ public class DataEntry implements Cloneable {
 		if (world != null && x != null && y != null && z != null) {
 			Location loc = new Location(world, x.doubleValue(), y.doubleValue(), z.doubleValue());
 			Number yaw = getNumber(YAW_KEY);
-			Number pitch = getNumber(PITCH_KEY);
-			if (yaw != null && pitch != null) {
+			if (yaw != null) {
 				loc.setYaw(yaw.floatValue());
+			}
+			Number pitch = getNumber(PITCH_KEY);
+			if (pitch != null) {
 				loc.setPitch(pitch.floatValue());
 			}
 			return loc;
