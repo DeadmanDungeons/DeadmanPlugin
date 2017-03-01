@@ -272,7 +272,7 @@ public class DeadmanExecutor implements CommandExecutor {
 	 * @throws IllegalStateException if the class of the given command is not annotated with the {@link CommandInfo} annotation
 	 * @throws IllegalArgumentException if command is null
 	 */
-	public final <C extends Command> void registerCommand(Class<C> commandClass) {
+	public final <C extends Command> void registerCommand(Class<C> commandClass) throws IllegalStateException, IllegalArgumentException {
 		Validate.notNull(commandClass, "commandClass cannot be null");
 		
 		CommandInfo commandInfo = getCommandInfo(commandClass);
@@ -287,7 +287,7 @@ public class DeadmanExecutor implements CommandExecutor {
 	 * @param commandInfo - The {@link CommandInfo} for the command
 	 * @throws IllegalArgumentException if commandClass or commandInfo is null
 	 */
-	public final <C extends Command> void registerCommand(Class<C> commandClass, CommandInfo commandInfo) {
+	public final <C extends Command> void registerCommand(Class<C> commandClass, CommandInfo commandInfo) throws IllegalArgumentException {
 		Validate.notNull(commandClass, "commandClass cannot be null");
 		
 		try {
@@ -305,7 +305,7 @@ public class DeadmanExecutor implements CommandExecutor {
 	 * @throws IllegalStateException if the class of the given command is not annotated with the {@link CommandInfo} annotation
 	 * @throws IllegalArgumentException if command is null
 	 */
-	public final <C extends Command> void registerCommand(C command) {
+	public final <C extends Command> void registerCommand(C command) throws IllegalStateException, IllegalArgumentException {
 		Validate.notNull(command, "command cannot be null");
 		
 		CommandInfo commandInfo = getCommandInfo(command.getClass());
@@ -319,15 +319,16 @@ public class DeadmanExecutor implements CommandExecutor {
 	 * Use {@link CommandInfoImpl} to construct a CommandInfo object at runtime.
 	 * @param command - An instance of the command that should be registered
 	 * @param commandInfo - The {@link CommandInfo} for the command
+	 * @throws IllegalArgumentException if command or commandInfo is null
 	 */
-	public final <C extends Command> void registerCommand(C command, CommandInfo commandInfo) {
+	public final <C extends Command> void registerCommand(C command, CommandInfo commandInfo) throws IllegalArgumentException {
 		Validate.notNull(command, "command cannot be null");
 		Validate.notNull(commandInfo, "commandInfo cannot be null");
 		
 		commands.put(command.getClass(), new CommandWrapper<C>(commandInfo, command));
 	}
 	
-	private <C extends Command> CommandInfo getCommandInfo(Class<C> commandClass) {
+	private <C extends Command> CommandInfo getCommandInfo(Class<C> commandClass) throws IllegalStateException {
 		CommandInfo info = commandClass.getAnnotation(CommandInfo.class);
 		if (info == null || info.name() == null || !info.name().matches("^\\S*$")) {
 			String msg = "The '%s' command must be annotated with the CommandInfo annotation, and the name cannot be null or contain whitespace";
@@ -336,13 +337,25 @@ public class DeadmanExecutor implements CommandExecutor {
 		return info;
 	}
 	
+	/**
+	 * Unregister or remove a command by the given command class
+	 * @param commandClass - The class of the command that should be unregistered
+	 * @return the CommandWrapper for the unregistered command
+	 * @throws IllegalStateException if the command has not been registered
+	 */
+	public final <C extends Command> CommandWrapper<C> unregisterCommand(Class<C> commandClass) throws IllegalStateException {
+		CommandWrapper<C> commandWrapper = getCommandWrapper(commandClass);
+		commands.remove(commandClass);
+		return commandWrapper;
+	}
+	
 	
 	/**
 	 * @param command - The class of the desired Command
 	 * @return an instance of the registered Command
 	 * @throws IllegalStateException if the command has not been registered.
 	 */
-	public final <C extends Command> C getCommand(Class<C> command) {
+	public final <C extends Command> C getCommand(Class<C> command) throws IllegalStateException {
 		return getCommandWrapper(command).getCmd();
 	}
 	
@@ -351,13 +364,13 @@ public class DeadmanExecutor implements CommandExecutor {
 	 * @return a {@link CommandWrapper} containing an instance of the registered Command and the commands CommandInfo annotation
 	 * @throws IllegalStateException if the command has not been registered.
 	 */
-	@SuppressWarnings("unchecked")
-	public final <C extends Command> CommandWrapper<C> getCommandWrapper(Class<C> command) {
-		Validate.notNull(command, "command cannot be null");
-		if (!commands.containsKey(command)) {
+	public final <C extends Command> CommandWrapper<C> getCommandWrapper(Class<C> command) throws IllegalStateException {
+		@SuppressWarnings("unchecked")
+		CommandWrapper<C> commandWrapper = (CommandWrapper<C>) commands.get(command);
+		if (commandWrapper == null) {
 			throw new IllegalStateException("A command for type '" + command.getCanonicalName() + "' has not been registered!");
 		}
-		return (CommandWrapper<C>) commands.get(command);
+		return commandWrapper;
 	}
 	
 	/**
@@ -378,8 +391,9 @@ public class DeadmanExecutor implements CommandExecutor {
 	 * like 'accept', 'cancel', and 'continue', so that these commands will not be shown in the plugin's help page.
 	 * @param cmdName - The String name and syntax for the PseudoCommand. This must not match any other PseudoCommand or regular command name.
 	 * @param pseudoCommand - The PseudoCommand object to be executed when this PseudoCommand is called
+	 * @throws IllegalArgumentException if cmdName or pseudoCommand is null
 	 */
-	public final void registerPseudoCommand(String cmdName, PseudoCommand pseudoCommand) {
+	public final void registerPseudoCommand(String cmdName, PseudoCommand pseudoCommand) throws IllegalArgumentException {
 		Validate.notNull(cmdName, "cmdName cannot be null");
 		Validate.notNull(pseudoCommand, "pseudoCommand cannot be null");
 		
@@ -399,8 +413,9 @@ public class DeadmanExecutor implements CommandExecutor {
 	 * Equivalent of calling <br>
 	 * {@link #registerConfirmationCommand(ConfirmationCommand, String, String) registerConfirmationCommand(command, null, null)}
 	 * @param command - The instance of the ConfirmationCommand to register
+	 * @throws IllegalArgumentException if command is null
 	 */
-	public final void registerConfirmationCommand(ConfirmationCommand<?> command) {
+	public final void registerConfirmationCommand(ConfirmationCommand<?> command) throws IllegalArgumentException {
 		registerConfirmationCommand(command, null, null);
 	}
 	
@@ -410,7 +425,8 @@ public class DeadmanExecutor implements CommandExecutor {
 	 * @param declineCmd - The String for the decline {@link PseudoCommand} to be registered. defaults to "cancel".
 	 * @throws IllegalArgumentException if command is null
 	 */
-	public final void registerConfirmationCommand(ConfirmationCommand<?> command, String acceptCmd, String declineCmd) {
+	public final void registerConfirmationCommand(ConfirmationCommand<?> command, String acceptCmd, String declineCmd)
+			throws IllegalArgumentException {
 		Validate.notNull(command, "command cannot be null");
 		
 		acceptCmd = (acceptCmd == null ? "accept" : acceptCmd.toLowerCase());
@@ -424,8 +440,10 @@ public class DeadmanExecutor implements CommandExecutor {
 	 * @param cmdClass - The class of the ConfirmationCommand to get
 	 * @return the registered instance of the given ConfirmationCommand class
 	 * @throws IllegalStateException if no instance of the given ConfirmationCommand class has been registered
+	 * @throws IllegalArgumentException if cmdClass is null
 	 */
-	public final <T, C extends ConfirmationCommand<T>> C getConfirmationCommand(Class<C> cmdClass) {
+	public final <T, C extends ConfirmationCommand<T>> C getConfirmationCommand(Class<C> cmdClass)
+			throws IllegalStateException, IllegalArgumentException {
 		Validate.notNull(cmdClass, "cmdClass cannot be null");
 		C cmd = cmdClass.cast(confirmationCommands.get(cmdClass));
 		if (cmd == null) {
@@ -443,8 +461,9 @@ public class DeadmanExecutor implements CommandExecutor {
 	
 	/**
 	 * @param converter - The ArgumentConverter to register
+	 * @throws IllegalArgumentException if type or converter is null
 	 */
-	public final <C> void registerConverter(Class<? super C> type, ArgumentConverter<C> converter) {
+	public final <C> void registerConverter(Class<? super C> type, ArgumentConverter<C> converter) throws IllegalArgumentException {
 		Validate.notNull(type, "type cannot be null");
 		Validate.notNull(converter, "converter cannot be null");
 		
@@ -469,8 +488,10 @@ public class DeadmanExecutor implements CommandExecutor {
 	 * Example:<br><code>/dd help plugin</code>
 	 * @param helpArg - The help info argument
 	 * @param messagePath - The path the the help info message in the plugins lang file
+	 * @throws IllegalStateException if helpArg is a number
+	 * @throws IllegalArgumentException if helpArg or messagePath is null
 	 */
-	public final void registerHelpInfo(String helpArg, String messagePath) {
+	public final void registerHelpInfo(String helpArg, String messagePath) throws IllegalStateException, IllegalArgumentException {
 		Validate.notNull(helpArg, "helpArg cannot be null");
 		Validate.notNull(messagePath, "messagePath cannot be null");
 		String arg = helpArg.trim().toLowerCase();
