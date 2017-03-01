@@ -285,8 +285,8 @@ public class Messenger {
 		if (subCmdIndexes.isEmpty()) {
 			sender.sendMessage(baseCmd);
 		}
-		if (cmdInfo.description() != null && !cmdInfo.description().trim().isEmpty()) {
-			sender.sendMessage(getTertiaryColor() + "  - " + cmdInfo.description());
+		if (!StringUtils.isBlank(cmdInfo.description())) {
+			sender.sendMessage(getTertiaryColor() + "  - " + injectConfigVariables(cmdInfo.description()).trim());
 		}
 		for (Integer subCmdIndex : subCmdIndexes) {
 			SubCommandInfo subCmdInfo = cmdInfo.subCommands()[subCmdIndex];
@@ -296,10 +296,22 @@ public class Messenger {
 				arguments += (i > 0 ? " " : "") + String.format(argInfo.argType().getWrap(), argInfo.argName());
 			}
 			sender.sendMessage(baseCmd + " " + arguments);
-			if (subCmdInfo.description() != null && !subCmdInfo.description().trim().isEmpty()) {
-				sender.sendMessage(getTertiaryColor() + "    - " + subCmdInfo.description());
+			if (!StringUtils.isBlank(subCmdInfo.description())) {
+				sender.sendMessage(getTertiaryColor() + "    - " + injectConfigVariables(subCmdInfo.description()).trim());
 			}
 		}
+	}
+	
+	private String injectConfigVariables(String message) {
+		Matcher matcher = VARIABLE_PATTERN.matcher(message);
+		while (matcher.find()) {
+			String configPath = matcher.group().replaceAll("<|>", "");
+			Object value = plugin.getConfig().get(configPath);
+			if (value != null) {
+				message = message.replace(matcher.group(), value.toString());
+			}
+		}
+		return message;
 	}
 	
 	/**
@@ -308,8 +320,7 @@ public class Messenger {
 	public void sendPluginInfo(CommandSender sender, Command bukkitCmd) {
 		PluginDescriptionFile pdf = plugin.getDescription();
 		sender.sendMessage(getSecondaryColor() + pdf.getName() + " Version: " + getPrimaryColor() + pdf.getVersion());
-		String authors = formatList(pdf.getAuthors());
-		sender.sendMessage(getSecondaryColor() + "Created By: " + getPrimaryColor() + authors);
+		sender.sendMessage(getSecondaryColor() + "Created By: " + getPrimaryColor() + formatList(pdf.getAuthors()));
 		sender.sendMessage(getSecondaryColor() + "Contact at: " + getPrimaryColor() + pdf.getWebsite());
 		sender.sendMessage(getSecondaryColor() + "Type '/" + bukkitCmd.getName() + " help' for a list of commands you can use");
 	}
