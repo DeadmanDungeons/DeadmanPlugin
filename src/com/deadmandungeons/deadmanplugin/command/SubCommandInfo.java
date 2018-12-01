@@ -15,77 +15,77 @@ import java.lang.annotation.Target;
  * @author Jon
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target(value = { ElementType.TYPE })
+@Target(value = {ElementType.TYPE})
 public @interface SubCommandInfo {
-	
-	/**
-	 * The arguments for each sub-command, and how that command should be executed, and validated.
-	 * If this is empty or not given, The subCommand will match when no arguments are given.
-	 */
-	public ArgumentInfo[] arguments() default {};
-	
-	/**
-	 * An array of permission nodes to check before executing the command.
-	 * Only one permission node is needed to execute.
-	 * Further permission checks may be made in the command execute method. <br>
-	 * default = an empty String array
-	 */
-	public String[] permissions() default {};
-	
-	/**
-	 * The description of this sub-command
-	 */
-	public String description() default "";
-	
-	/**
-	 * A flag stating whether or not the SubCommand can only be executed in-game.
-	 * This flag has a lower priority than the {@link CommandInfo#inGameOnly()} flag,
-	 * meaning if inGameOnly is true at CommandInfo scope, this flag will not be evaluated
-	 * if the command was not executed by a player.<br>
-	 * default = false
-	 */
-	public boolean inGameOnly() default false;
-	
-	
-	public static class SubCommandInfoImpl implements Annotation, SubCommandInfo {
-		
-		private final ArgumentInfo[] arguments;
-		private final String[] permissions;
-		private final String description;
-		private final boolean inGameOnly;
-		
-		public SubCommandInfoImpl(ArgumentInfo[] arguments, String[] permissions, String description, Boolean inGameOnly) {
-			this.arguments = (arguments != null ? arguments : new ArgumentInfo[0]);
-			this.permissions = (permissions != null ? permissions : new String[0]);
-			this.description = (description != null ? description : "");
-			this.inGameOnly = (inGameOnly != null ? inGameOnly : false);
-		}
-		
-		@Override
-		public ArgumentInfo[] arguments() {
-			return arguments;
-		}
-		
-		@Override
-		public String[] permissions() {
-			return permissions;
-		}
-		
-		@Override
-		public String description() {
-			return description;
-		}
-		
-		@Override
-		public boolean inGameOnly() {
-			return inGameOnly;
-		}
-		
-		@Override
-		public Class<? extends Annotation> annotationType() {
-			return SubCommandInfo.class;
-		}
-		
-	}
-	
+
+    /**
+     * The arguments for each sub-command, and how that command should be executed, and validated.
+     * If this is empty or not given, The subCommand will match when no arguments are given.
+     */
+    public ArgumentInfo[] arguments() default {};
+
+    /**
+     * An array of permission nodes to check before executing the command.
+     * Only one permission node is needed to execute.
+     * Further permission checks may be made in the command execute method. <br>
+     * default = an empty String array
+     */
+    public String[] permissions() default {};
+
+    /**
+     * The description of this sub-command
+     */
+    public String description() default "";
+
+    /**
+     * A flag stating whether or not the SubCommand can only be executed in-game.
+     * This flag has a lower priority than the {@link CommandInfo#inGameOnly()} flag,
+     * meaning if inGameOnly is true at CommandInfo scope, this flag will not be evaluated
+     * if the command was not executed by a player.<br>
+     * default = false
+     */
+    public boolean inGameOnly() default false;
+
+
+    public static class SubCommandInfoImpl implements Annotation, SubCommandInfo {
+
+        private final ArgumentInfo[] arguments;
+        private final String[] permissions;
+        private final String description;
+        private final boolean inGameOnly;
+
+        public SubCommandInfoImpl(ArgumentInfo[] arguments, String[] permissions, String description, Boolean inGameOnly) {
+            this.arguments = (arguments != null ? arguments : new ArgumentInfo[0]);
+            this.permissions = (permissions != null ? permissions : new String[0]);
+            this.description = (description != null ? description : "");
+            this.inGameOnly = (inGameOnly != null ? inGameOnly : false);
+        }
+
+        @Override
+        public ArgumentInfo[] arguments() {
+            return arguments;
+        }
+
+        @Override
+        public String[] permissions() {
+            return permissions;
+        }
+
+        @Override
+        public String description() {
+            return description;
+        }
+
+        @Override
+        public boolean inGameOnly() {
+            return inGameOnly;
+        }
+
+        @Override
+        public Class<? extends Annotation> annotationType() {
+            return SubCommandInfo.class;
+        }
+
+    }
+
 }

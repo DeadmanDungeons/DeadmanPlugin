@@ -5,18 +5,18 @@ package com.deadmandungeons.deadmanplugin.timer;
  * @author Jon
  */
 public interface TimerExecutor {
-	
-	/**
-	 * This will be called once every repeat of the timer which will be every minute when there is
-	 * more than 2 minutes remaining, and every second when there is less than 2 minutes remaining
-	 * @param timer - The timer object
-	 * @param isPerMinute - true if the timer is running every minute
-	 */
-	void onTimerTick(Timer timer, boolean isPerMinute);
-	
-	/**
-	 * This will be called when the timer has ended. The timer will be null at this point
-	 */
-	void onTimerEnd();
-	
+
+    /**
+     * This will be called once every repeat of the timer which will be every minute when there is
+     * more than 2 minutes remaining, and every second when there is less than 2 minutes remaining
+     * @param timer - The timer object
+     * @param isPerMinute - true if the timer is running every minute
+     */
+    void onTimerTick(Timer timer, boolean isPerMinute);
+
+    /**
+     * This will be called when the timer has ended. The timer will be null at this point
+     */
+    void onTimerEnd();
+
 }

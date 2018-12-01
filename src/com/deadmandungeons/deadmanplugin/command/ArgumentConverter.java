@@ -9,12 +9,12 @@ import com.deadmandungeons.deadmanplugin.Result;
  * @author Jon
  */
 public interface ArgumentConverter<T> {
-	
-	/**
-	 * @param argName - The name of the argument to convert
-	 * @param arg - The String value of the argument
-	 * @return the argument represented as type T
-	 */
-	public Result<T> convertCommandArg(String argName, String arg);
-	
+
+    /**
+     * @param argName - The name of the argument to convert
+     * @param arg - The String value of the argument
+     * @return the argument represented as type T
+     */
+    public Result<T> convertCommandArg(String argName, String arg);
+
 }

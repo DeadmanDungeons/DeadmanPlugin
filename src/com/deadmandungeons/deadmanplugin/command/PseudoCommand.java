@@ -14,11 +14,11 @@ import org.bukkit.command.CommandSender;
  * @author Jon
  */
 public interface PseudoCommand {
-	
-	/**
-	 * Execute a PseudoCommand as the given {@link CommandSender}.
-	 * @param sender - the CommandSender executing the command
-	 * @return true if the command was executed successfully, and false otherwise.
-	 */
-	public boolean execute(CommandSender sender);
+
+    /**
+     * Execute a PseudoCommand as the given {@link CommandSender}.
+     * @param sender - the CommandSender executing the command
+     * @return true if the command was executed successfully, and false otherwise.
+     */
+    public boolean execute(CommandSender sender);
 }
